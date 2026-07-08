@@ -7,21 +7,21 @@ export default function LoginPage() {
   const [state, action, pending] = useActionState(login, undefined);
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-stone-100 px-4">
+    <main className="min-h-screen flex items-center justify-center bg-stone-100 dark:bg-stone-950 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600 text-white text-xl font-bold mb-3">
             E
           </div>
-          <h1 className="text-2xl font-semibold text-stone-900">Estate Portal</h1>
-          <p className="text-sm text-stone-500 mt-1">Private Property engagement &amp; leads hub</p>
+          <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100">Estate Portal</h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Private Property engagement &amp; leads hub</p>
         </div>
         <form
           action={action}
-          className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 space-y-4"
+          className="bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-200 dark:border-stone-800 p-6 space-y-4"
         >
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-stone-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
               Email
             </label>
             <input
@@ -30,11 +30,11 @@ export default function LoginPage() {
               type="email"
               autoComplete="email"
               required
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 text-stone-900 dark:text-stone-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-stone-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
               Password
             </label>
             <input
@@ -43,11 +43,11 @@ export default function LoginPage() {
               type="password"
               autoComplete="current-password"
               required
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 text-stone-900 dark:text-stone-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           {state?.error && (
-            <p className="text-sm text-red-600" role="alert">
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
               {state.error}
             </p>
           )}

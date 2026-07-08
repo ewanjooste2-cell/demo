@@ -29,28 +29,54 @@ async function main() {
     update: {},
     create: { name: "Anke du Toit", email: "anke@demo.co.za", passwordHash: password, role: "AGENT" },
   });
+  const agent3 = await prisma.user.upsert({
+    where: { email: "marius@demo.co.za" },
+    update: {},
+    create: { name: "Marius Steyn", email: "marius@demo.co.za", passwordHash: password, role: "AGENT" },
+  });
 
+  // Centurion, Gauteng listings. soldAgo (days) marks a completed sale.
   const listingsData = [
-    { webRef: "T4236101", title: "3 Bedroom House in Somerset West", address: "12 Bizweni Ave", suburb: "Somerset West", price: 2850000, propertyType: "House", bedrooms: 3, agentId: agent1.id, base: 90 },
-    { webRef: "T4236102", title: "2 Bedroom Apartment in Strand", address: "8 Beach Rd", suburb: "Strand", price: 1450000, propertyType: "Apartment", bedrooms: 2, agentId: agent1.id, base: 140 },
-    { webRef: "T4236103", title: "4 Bedroom Family Home in Stellenbosch", address: "45 Dorp St", suburb: "Stellenbosch", price: 5200000, propertyType: "House", bedrooms: 4, agentId: agent2.id, base: 60 },
-    { webRef: "T4236104", title: "Vacant Land in Gordon's Bay", address: "Plot 221, Mountainside", suburb: "Gordon's Bay", price: 980000, propertyType: "Vacant Land", bedrooms: null, agentId: agent2.id, base: 25 },
-    { webRef: "T4236105", title: "3 Bedroom Townhouse in Somerset West", address: "Unit 14, Silwerboom Estate", suburb: "Somerset West", price: 2150000, propertyType: "Townhouse", bedrooms: 3, agentId: agent1.id, base: 110 },
-    { webRef: "T4236106", title: "Penthouse with Sea View in Strand", address: "1201 Hibernian Towers", suburb: "Strand", price: 4750000, propertyType: "Apartment", bedrooms: 3, agentId: agent2.id, base: 170 },
-    { webRef: "T4236107", title: "5 Bedroom Wine Estate Home", address: "3 Vredenburg Rd", suburb: "Stellenbosch", price: 8900000, propertyType: "House", bedrooms: 5, agentId: agent2.id, base: 45 },
-    { webRef: "T4236108", title: "2 Bedroom Garden Cottage", address: "67 Irene Ave", suburb: "Somerset West", price: 1690000, propertyType: "House", bedrooms: 2, agentId: agent1.id, base: 75 },
+    { webRef: "T4236101", title: "3 Bedroom House in Eldoraigne", address: "12 Willem Botha St", suburb: "Eldoraigne", price: 2850000, propertyType: "House", bedrooms: 3, agentId: agent1.id, base: 90, lat: -25.8552, lng: 28.154 },
+    { webRef: "T4236102", title: "2 Bedroom Apartment in Die Hoewes", address: "8 Lenchen Ave", suburb: "Die Hoewes", price: 1450000, propertyType: "Apartment", bedrooms: 2, agentId: agent1.id, base: 140, lat: -25.8524, lng: 28.1965 },
+    { webRef: "T4236103", title: "4 Bedroom Family Home in Irene", address: "45 Stopforth Lane", suburb: "Irene", price: 5200000, propertyType: "House", bedrooms: 4, agentId: agent2.id, base: 60, lat: -25.8898, lng: 28.2121 },
+    { webRef: "T4236104", title: "Vacant Land in Monavoni", address: "Plot 221, Monavoni AH", suburb: "Monavoni", price: 980000, propertyType: "Vacant Land", bedrooms: null, agentId: agent2.id, base: 25, lat: -25.9042, lng: 28.1057 },
+    { webRef: "T4236105", title: "3 Bedroom Townhouse in Wierda Park", address: "Unit 14, Silwerboom Estate", suburb: "Wierda Park", price: 2150000, propertyType: "Townhouse", bedrooms: 3, agentId: agent1.id, base: 110, lat: -25.8663, lng: 28.1462 },
+    { webRef: "T4236106", title: "Penthouse in Centurion Central", address: "1201 Southdowns Towers", suburb: "Centurion Central", price: 4750000, propertyType: "Apartment", bedrooms: 3, agentId: agent2.id, base: 170, status: "UNDER_OFFER", lat: -25.858, lng: 28.1894 },
+    { webRef: "T4236107", title: "5 Bedroom Estate Home in Midstream", address: "3 Bondev Dr", suburb: "Midstream", price: 8900000, propertyType: "House", bedrooms: 5, agentId: agent2.id, base: 45, lat: -25.9169, lng: 28.1855 },
+    { webRef: "T4236108", title: "2 Bedroom Garden Cottage in Doringkloof", address: "67 Kraalnaboom Ave", suburb: "Doringkloof", price: 1690000, propertyType: "House", bedrooms: 2, agentId: agent1.id, base: 75, lat: -25.8536, lng: 28.2064 },
+    { webRef: "T4236109", title: "3 Bedroom Duplex in Rooihuiskraal", address: "18 Suikerbossie St", suburb: "Rooihuiskraal", price: 1850000, propertyType: "Townhouse", bedrooms: 3, agentId: agent3.id, base: 85, lat: -25.8846, lng: 28.147 },
+    { webRef: "T4236110", title: "Modern Loft Apartment in Highveld", address: "22 Oak Ave", suburb: "Highveld", price: 2450000, propertyType: "Apartment", bedrooms: 1, agentId: agent3.id, base: 95, lat: -25.8779, lng: 28.1834 },
+    // Sold stock — drives the sales dashboard.
+    { webRef: "T4235901", title: "4 Bedroom House in Clubview", address: "5 Von Willich Ave", suburb: "Clubview", price: 3200000, propertyType: "House", bedrooms: 4, agentId: agent1.id, base: 120, soldAgo: 21, lat: -25.8459, lng: 28.1611 },
+    { webRef: "T4235902", title: "Family Home with Flatlet in The Reeds", address: "31 Kwikkie Cres", suburb: "The Reeds", price: 2650000, propertyType: "House", bedrooms: 4, agentId: agent1.id, base: 100, soldAgo: 74, lat: -25.8942, lng: 28.1394 },
+    { webRef: "T4235903", title: "2 Bedroom Apartment in Zwartkop", address: "Unit 9, Audas Estate", suburb: "Zwartkop", price: 1590000, propertyType: "Apartment", bedrooms: 2, agentId: agent1.id, base: 90, soldAgo: 152, lat: -25.843, lng: 28.1826 },
+    { webRef: "T4235904", title: "3 Bedroom House in Valhalla", address: "77 Bataleur Rd", suburb: "Valhalla", price: 2100000, propertyType: "House", bedrooms: 3, agentId: agent1.id, base: 80, soldAgo: 258, lat: -25.8129, lng: 28.1553 },
+    { webRef: "T4235905", title: "Luxury Villa in Cornwall Hill", address: "8 Nellmapius Dr", suburb: "Cornwall Hill", price: 7400000, propertyType: "House", bedrooms: 5, agentId: agent2.id, base: 55, soldAgo: 12, lat: -25.9036, lng: 28.2255 },
+    { webRef: "T4235906", title: "Golf Estate Home in Blue Valley", address: "14 Torrens Way", suburb: "Blue Valley Golf Estate", price: 5850000, propertyType: "House", bedrooms: 4, agentId: agent2.id, base: 70, soldAgo: 98, lat: -25.9295, lng: 28.147 },
+    { webRef: "T4235907", title: "Top Floor Apartment in Pierre van Ryneveld", address: "402 Fever Tree", suburb: "Pierre van Ryneveld", price: 3350000, propertyType: "Apartment", bedrooms: 3, agentId: agent2.id, base: 130, soldAgo: 205, lat: -25.8228, lng: 28.228 },
+    { webRef: "T4235908", title: "Starter Home in Heuweloord", address: "3 Bosluisberg St", suburb: "Heuweloord", price: 1250000, propertyType: "House", bedrooms: 2, agentId: agent3.id, base: 65, soldAgo: 47, lat: -25.8885, lng: 28.1204 },
+    { webRef: "T4235909", title: "Townhouse in Amberfield", address: "Unit 3, Amberfield Manor", suburb: "Amberfield", price: 2380000, propertyType: "Townhouse", bedrooms: 3, agentId: agent3.id, base: 88, soldAgo: 190, lat: -25.9083, lng: 28.135 },
   ];
 
   const listings = [];
   for (const [i, l] of listingsData.entries()) {
-    const { base, ...data } = l;
+    const { base, soldAgo, lat, lng, status, ...data } = l as (typeof listingsData)[number] & {
+      status?: string;
+      soldAgo?: number;
+    };
+    const resolvedStatus = soldAgo != null ? "SOLD" : (status ?? "ACTIVE");
+    const soldDate = soldAgo != null ? daysAgo(soldAgo) : null;
     const listing = await prisma.listing.upsert({
       where: { webRef: l.webRef },
-      update: {},
+      update: { ...data, latitude: lat, longitude: lng, status: resolvedStatus, soldDate },
       create: {
         ...data,
-        status: i === 6 ? "UNDER_OFFER" : "ACTIVE",
-        listedDate: daysAgo(70 - i * 4),
+        status: resolvedStatus,
+        soldDate,
+        latitude: lat,
+        longitude: lng,
+        listedDate: daysAgo(soldAgo != null ? soldAgo + 60 + i * 3 : 70 - i * 4),
         url: `https://www.privateproperty.co.za/for-sale/some-listing/${l.webRef}`,
       },
     });
@@ -119,6 +145,7 @@ async function main() {
   console.log("Seeded:", {
     users: await prisma.user.count(),
     listings: await prisma.listing.count(),
+    sold: await prisma.listing.count({ where: { status: "SOLD" } }),
     snapshots: await prisma.viewSnapshot.count(),
     leads: await prisma.lead.count(),
   });

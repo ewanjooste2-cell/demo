@@ -25,8 +25,8 @@ export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
             href={link.href}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
               active
-                ? "bg-stone-100 text-stone-900"
-                : "text-stone-500 hover:text-stone-900 hover:bg-stone-50"
+                ? "bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100"
+                : "text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-50 dark:hover:bg-stone-800/60"
             }`}
           >
             {link.label}

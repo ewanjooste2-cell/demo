@@ -16,15 +16,15 @@ export default async function UsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-stone-900">Users</h1>
-        <p className="text-sm text-stone-500">Agents and principals with access to the portal</p>
+        <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Users</h1>
+        <p className="text-sm text-stone-500 dark:text-stone-400">Agents and principals with access to the portal</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <Card className="lg:col-span-2 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-stone-500 border-b border-stone-200">
+              <tr className="text-left text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-800">
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Role</th>
                 <th className="px-4 py-3 font-medium text-right">Listings</th>
@@ -35,19 +35,19 @@ export default async function UsersPage() {
             </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u.id} className="border-b border-stone-100 last:border-0">
+                <tr key={u.id} className="border-b border-stone-100 dark:border-stone-800 last:border-0">
                   <td className="px-4 py-3">
-                    <div className={`font-medium ${u.active ? "text-stone-900" : "text-stone-400 line-through"}`}>
+                    <div className={`font-medium ${u.active ? "text-stone-900 dark:text-stone-100" : "text-stone-400 dark:text-stone-600 line-through"}`}>
                       {u.name}
                     </div>
-                    <div className="text-xs text-stone-500">{u.email}</div>
+                    <div className="text-xs text-stone-500 dark:text-stone-400">{u.email}</div>
                   </td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
                         u.role === "ADMIN"
-                          ? "bg-violet-50 text-violet-700 ring-violet-600/20"
-                          : "bg-stone-100 text-stone-600 ring-stone-500/20"
+                          ? "bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/60 dark:text-violet-300 dark:ring-violet-400/30"
+                          : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 ring-stone-500/20 dark:ring-stone-500/30"
                       }`}
                     >
                       {u.role === "ADMIN" ? "Principal" : "Agent"}
@@ -55,13 +55,13 @@ export default async function UsersPage() {
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">{u._count.listings}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{u._count.leads}</td>
-                  <td className="px-4 py-3 text-xs text-stone-500">{formatDate(u.createdAt)}</td>
+                  <td className="px-4 py-3 text-xs text-stone-500 dark:text-stone-400">{formatDate(u.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
                     {u.id !== admin.id && (
                       <form action={toggleUserActive.bind(null, u.id)}>
                         <button
                           type="submit"
-                          className="text-xs text-stone-500 hover:text-stone-900 border border-stone-300 rounded-lg px-2.5 py-1"
+                          className="text-xs text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 border border-stone-300 dark:border-stone-700 rounded-lg px-2.5 py-1"
                         >
                           {u.active ? "Deactivate" : "Reactivate"}
                         </button>
@@ -75,7 +75,7 @@ export default async function UsersPage() {
         </Card>
 
         <Card className="p-6">
-          <h2 className="font-medium text-stone-900 mb-4">Add user</h2>
+          <h2 className="font-medium text-stone-900 dark:text-stone-100 mb-4">Add user</h2>
           <UserForm />
         </Card>
       </div>

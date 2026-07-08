@@ -31,6 +31,9 @@ model Listing {
   propertyType String         @default("House")
   bedrooms     Int?
   url          String? // link to the live Private Property listing
+  latitude     Float? // for the listings map
+  longitude    Float?
+  soldDate     DateTime? // set when status moves to SOLD; basis for sales reporting
   listedDate   DateTime       @default(now())
   createdAt    DateTime       @default(now())
   agentId      String?

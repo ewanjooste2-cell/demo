@@ -30,19 +30,19 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-semibold text-stone-900">{lead.name}</h1>
+            <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">{lead.name}</h1>
             <LeadStatusBadge status={lead.status} />
             <SourceBadge source={lead.source} />
           </div>
-          <p className="text-sm text-stone-500 mt-1">Received {formatDate(lead.receivedAt)}</p>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Received {formatDate(lead.receivedAt)}</p>
         </div>
-        <Link href="/leads" className="text-sm text-blue-700 hover:underline">
+        <Link href="/leads" className="text-sm text-blue-700 dark:text-blue-400 hover:underline">
           ← Back to leads
         </Link>
       </div>
 
       <Card className="p-5 space-y-3">
-        <h2 className="text-sm font-medium text-stone-700">Move through pipeline</h2>
+        <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300">Move through pipeline</h2>
         <div className="flex flex-wrap gap-2">
           {LEAD_STATUSES.map((s) => {
             const action = updateLeadStatus.bind(null, lead.id, s);
@@ -55,7 +55,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
                     current
                       ? "bg-blue-600 text-white border-blue-600 cursor-default"
-                      : "bg-white text-stone-600 border-stone-300 hover:bg-stone-50"
+                      : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border-stone-300 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800/60"
                   }`}
                 >
                   {LEAD_STATUS_LABELS[s]}
@@ -68,25 +68,25 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="p-5">
-          <h2 className="text-sm font-medium text-stone-700 mb-3">Contact details</h2>
+          <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">Contact details</h2>
           <dl className="space-y-2 text-sm">
             <div>
-              <dt className="text-xs text-stone-500">Email</dt>
-              <dd className="text-stone-900">
-                {lead.email ? <a className="text-blue-700 hover:underline" href={`mailto:${lead.email}`}>{lead.email}</a> : "—"}
+              <dt className="text-xs text-stone-500 dark:text-stone-400">Email</dt>
+              <dd className="text-stone-900 dark:text-stone-100">
+                {lead.email ? <a className="text-blue-700 dark:text-blue-400 hover:underline" href={`mailto:${lead.email}`}>{lead.email}</a> : "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-stone-500">Phone</dt>
-              <dd className="text-stone-900">
-                {lead.phone ? <a className="text-blue-700 hover:underline" href={`tel:${lead.phone.replace(/\s/g, "")}`}>{lead.phone}</a> : "—"}
+              <dt className="text-xs text-stone-500 dark:text-stone-400">Phone</dt>
+              <dd className="text-stone-900 dark:text-stone-100">
+                {lead.phone ? <a className="text-blue-700 dark:text-blue-400 hover:underline" href={`tel:${lead.phone.replace(/\s/g, "")}`}>{lead.phone}</a> : "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-stone-500">Listing</dt>
-              <dd className="text-stone-900">
+              <dt className="text-xs text-stone-500 dark:text-stone-400">Listing</dt>
+              <dd className="text-stone-900 dark:text-stone-100">
                 {lead.listing ? (
-                  <Link href={`/listings/${lead.listing.id}`} className="text-blue-700 hover:underline">
+                  <Link href={`/listings/${lead.listing.id}`} className="text-blue-700 dark:text-blue-400 hover:underline">
                     {lead.listing.title}
                   </Link>
                 ) : (
@@ -95,8 +95,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-stone-500">Agent</dt>
-              <dd className="text-stone-900">{lead.agent?.name ?? "Unassigned"}</dd>
+              <dt className="text-xs text-stone-500 dark:text-stone-400">Agent</dt>
+              <dd className="text-stone-900 dark:text-stone-100">{lead.agent?.name ?? "Unassigned"}</dd>
             </div>
           </dl>
           {user.role === "ADMIN" && (
@@ -117,15 +117,15 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         </Card>
 
         <Card className="p-5">
-          <h2 className="text-sm font-medium text-stone-700 mb-3">Enquiry message</h2>
-          <p className="text-sm text-stone-700 whitespace-pre-wrap">
+          <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">Enquiry message</h2>
+          <p className="text-sm text-stone-700 dark:text-stone-300 whitespace-pre-wrap">
             {lead.message ?? "No message captured."}
           </p>
         </Card>
       </div>
 
       <Card className="p-5">
-        <h2 className="text-sm font-medium text-stone-700 mb-3">Notes &amp; activity</h2>
+        <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">Notes &amp; activity</h2>
         <form action={addLeadNote.bind(null, lead.id)} className="flex gap-2 mb-4">
           <input name="body" placeholder="Add a note — call made, viewing booked…" className={inputClass} />
           <button type="submit" className={buttonClass}>
@@ -134,14 +134,14 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         </form>
         <ul className="space-y-3">
           {lead.notes.map((note) => (
-            <li key={note.id} className="text-sm border-l-2 border-stone-200 pl-3">
-              <p className="text-stone-800">{note.body}</p>
-              <p className="text-xs text-stone-500 mt-0.5">
+            <li key={note.id} className="text-sm border-l-2 border-stone-200 dark:border-stone-800 pl-3">
+              <p className="text-stone-800 dark:text-stone-200">{note.body}</p>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                 {note.user?.name ?? "System"} · {formatDate(note.createdAt)}
               </p>
             </li>
           ))}
-          {lead.notes.length === 0 && <li className="text-sm text-stone-500">No notes yet.</li>}
+          {lead.notes.length === 0 && <li className="text-sm text-stone-500 dark:text-stone-400">No notes yet.</li>}
         </ul>
       </Card>
     </div>

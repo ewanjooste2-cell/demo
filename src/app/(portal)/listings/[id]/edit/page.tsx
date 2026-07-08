@@ -22,7 +22,7 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-stone-900">Edit listing</h1>
+      <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Edit listing</h1>
       <Card className="p-6">
         <ListingForm
           action={action}
@@ -39,6 +39,8 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
             status: listing.status,
             url: listing.url,
             agentId: listing.agentId,
+            latitude: listing.latitude,
+            longitude: listing.longitude,
           }}
           submitLabel="Save changes"
         />

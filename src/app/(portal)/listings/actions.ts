@@ -6,6 +6,12 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
 function fields(formData: FormData) {
+  const coord = (name: string) => {
+    const raw = String(formData.get(name) ?? "").trim();
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  };
   return {
     webRef: String(formData.get("webRef") ?? "").trim(),
     title: String(formData.get("title") ?? "").trim(),
@@ -17,6 +23,8 @@ function fields(formData: FormData) {
     status: String(formData.get("status") ?? "ACTIVE"),
     url: String(formData.get("url") ?? "").trim() || null,
     agentId: String(formData.get("agentId") ?? "") || null,
+    latitude: coord("latitude"),
+    longitude: coord("longitude"),
   };
 }
 
@@ -32,8 +40,11 @@ export async function createListing(_prev: { error?: string } | undefined, formD
   const existing = await prisma.listing.findUnique({ where: { webRef: data.webRef } });
   if (existing) return { error: `A listing with web ref ${data.webRef} already exists.` };
 
-  const listing = await prisma.listing.create({ data });
+  const listing = await prisma.listing.create({
+    data: { ...data, soldDate: data.status === "SOLD" ? new Date() : null },
+  });
   revalidatePath("/listings");
+  revalidatePath("/");
   redirect(`/listings/${listing.id}`);
 }
 
@@ -48,13 +59,22 @@ export async function updateListing(
   if (!data.webRef || !data.title || !data.suburb || !data.price) {
     return { error: "Web ref, title, suburb and price are required." };
   }
+
+  const current = await prisma.listing.findUnique({ where: { id: listingId } });
+  if (!current) return { error: "Listing not found." };
   if (user.role !== "ADMIN") {
-    const owned = await prisma.listing.findFirst({ where: { id: listingId, agentId: user.id } });
-    if (!owned) return { error: "You can only edit your own listings." };
+    if (current.agentId !== user.id) return { error: "You can only edit your own listings." };
     data.agentId = user.id;
   }
-  await prisma.listing.update({ where: { id: listingId }, data });
+
+  // Track the sale date: stamp it when the listing moves to SOLD, clear it when
+  // it moves back to a live status.
+  const soldDate =
+    data.status === "SOLD" ? (current.soldDate ?? new Date()) : null;
+
+  await prisma.listing.update({ where: { id: listingId }, data: { ...data, soldDate } });
   revalidatePath("/listings");
   revalidatePath(`/listings/${listingId}`);
+  revalidatePath("/");
   redirect(`/listings/${listingId}`);
 }

@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const nextArt = localFont({
+  src: [
+    { path: "./fonts/NEXT ART_Light.otf", weight: "300", style: "normal" },
+    { path: "./fonts/NEXT ART_Regular.otf", weight: "400", style: "normal" },
+    { path: "./fonts/NEXT ART_SemiBold.otf", weight: "600", style: "normal" },
+    { path: "./fonts/NEXT ART_Bold.otf", weight: "700", style: "normal" },
+    { path: "./fonts/NEXT ART_Heavy.otf", weight: "800", style: "normal" },
+  ],
+  variable: "--font-next-art",
 });
 
 const geistMono = Geist_Mono({
@@ -17,6 +24,10 @@ export const metadata: Metadata = {
   description: "Private Property engagement and leads hub",
 };
 
+// Runs before paint: applies the saved theme (or the OS preference) so there is
+// no flash of the wrong theme on load.
+const themeInit = `(function(){try{var t=localStorage.getItem("theme");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d)}catch(e){}})()`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,9 +36,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${nextArt.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+        {children}
+      </body>
     </html>
   );
 }

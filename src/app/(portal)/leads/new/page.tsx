@@ -13,7 +13,7 @@ export default async function NewLeadPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-stone-900">Add lead</h1>
+      <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Add lead</h1>
       <Card className="p-6">
         <LeadForm listings={listings} />
       </Card>

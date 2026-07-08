@@ -34,10 +34,10 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-semibold text-stone-900">{listing.title}</h1>
+            <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">{listing.title}</h1>
             <ListingStatusBadge status={listing.status} />
           </div>
-          <p className="text-sm text-stone-500 mt-1">
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
             {listing.address}, {listing.suburb} · Web ref{" "}
             <span className="font-mono">{listing.webRef}</span> · Listed {formatDate(listing.listedDate)}
             {listing.agent && <> · {listing.agent.name}</>}
@@ -68,11 +68,11 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <Card className="p-5">
-        <h2 className="text-sm font-medium text-stone-700 mb-3">Cumulative views over time</h2>
+        <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">Cumulative views over time</h2>
         {trend.length > 1 ? (
           <TrendChart data={trend} unit="views" />
         ) : (
-          <p className="text-sm text-stone-500 py-8 text-center">
+          <p className="text-sm text-stone-500 dark:text-stone-400 py-8 text-center">
             Not enough report data yet — import a Private Property report to start the trend.
           </p>
         )}
@@ -80,30 +80,30 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
 
       <Card>
         <div className="px-5 pt-5 pb-2 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-stone-700">Leads on this listing</h2>
-          <Link href="/leads" className="text-sm text-blue-700 hover:underline">
+          <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300">Leads on this listing</h2>
+          <Link href="/leads" className="text-sm text-blue-700 dark:text-blue-400 hover:underline">
             All leads
           </Link>
         </div>
         <table className="w-full text-sm">
           <tbody>
             {listing.leads.map((lead) => (
-              <tr key={lead.id} className="border-t border-stone-100 hover:bg-stone-50">
+              <tr key={lead.id} className="border-t border-stone-100 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800/60">
                 <td className="px-5 py-3">
-                  <Link href={`/leads/${lead.id}`} className="font-medium text-stone-900 hover:text-blue-700">
+                  <Link href={`/leads/${lead.id}`} className="font-medium text-stone-900 dark:text-stone-100 hover:text-blue-700 dark:hover:text-blue-400">
                     {lead.name}
                   </Link>
-                  <div className="text-xs text-stone-500">{lead.email ?? lead.phone ?? ""}</div>
+                  <div className="text-xs text-stone-500 dark:text-stone-400">{lead.email ?? lead.phone ?? ""}</div>
                 </td>
                 <td className="px-5 py-3">
                   <LeadStatusBadge status={lead.status} />
                 </td>
-                <td className="px-5 py-3 text-right text-xs text-stone-500">{timeAgo(lead.receivedAt)}</td>
+                <td className="px-5 py-3 text-right text-xs text-stone-500 dark:text-stone-400">{timeAgo(lead.receivedAt)}</td>
               </tr>
             ))}
             {listing.leads.length === 0 && (
               <tr>
-                <td className="px-5 py-8 text-center text-stone-500">No leads on this listing yet.</td>
+                <td className="px-5 py-8 text-center text-stone-500 dark:text-stone-400">No leads on this listing yet.</td>
               </tr>
             )}
           </tbody>

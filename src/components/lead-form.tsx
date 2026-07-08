@@ -54,7 +54,7 @@ export function LeadForm({
         <textarea id="message" name="message" rows={3} className={inputClass} />
       </div>
       {state?.error && (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
           {state.error}
         </p>
       )}

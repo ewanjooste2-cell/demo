@@ -10,6 +10,16 @@ export function formatNumber(value: number) {
   return new Intl.NumberFormat("en-ZA").format(value);
 }
 
+/** R2 850 000 → "R2.85m", R980 000 → "R980k" — for chart axes and dense tiles. */
+export function formatCompactRand(value: number) {
+  if (Math.abs(value) >= 1_000_000) {
+    const m = value / 1_000_000;
+    return `R${m >= 10 ? Math.round(m) : Math.round(m * 100) / 100}m`;
+  }
+  if (Math.abs(value) >= 1_000) return `R${Math.round(value / 1_000)}k`;
+  return `R${value}`;
+}
+
 export function formatDate(date: Date | string) {
   return new Date(date).toLocaleDateString("en-ZA", {
     day: "numeric",
