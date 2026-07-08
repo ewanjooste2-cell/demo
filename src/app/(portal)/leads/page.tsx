@@ -1,0 +1,122 @@
+import Link from "next/link";
+import { prisma } from "@/lib/db";
+import { getUserOrRedirect, agentScope } from "@/lib/session";
+import { timeAgo, LEAD_STATUSES, LEAD_STATUS_LABELS } from "@/lib/format";
+import { Card, LeadStatusBadge, SourceBadge, buttonClass } from "@/components/ui";
+
+export default async function LeadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const { status } = await searchParams;
+  const user = await getUserOrRedirect();
+  const scope = agentScope(user);
+
+  const [leads, counts] = await Promise.all([
+    prisma.lead.findMany({
+      where: { ...scope, ...(status ? { status } : {}) },
+      include: { listing: true, agent: true },
+      orderBy: { receivedAt: "desc" },
+      take: 200,
+    }),
+    prisma.lead.groupBy({ by: ["status"], where: scope, _count: true }),
+  ]);
+
+  const countFor = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
+  const total = counts.reduce((sum, c) => sum + c._count, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-stone-900">Leads</h1>
+          <p className="text-sm text-stone-500">
+            {total} lead{total === 1 ? "" : "s"}
+            {user.role !== "ADMIN" && " assigned to you"}
+          </p>
+        </div>
+        <Link href="/leads/new" className={buttonClass}>
+          Add lead
+        </Link>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href="/leads"
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
+            !status ? "bg-stone-900 text-white border-stone-900" : "bg-white text-stone-600 border-stone-300 hover:bg-stone-50"
+          }`}
+        >
+          All {total}
+        </Link>
+        {LEAD_STATUSES.map((s) => (
+          <Link
+            key={s}
+            href={`/leads?status=${s}`}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
+              status === s
+                ? "bg-stone-900 text-white border-stone-900"
+                : "bg-white text-stone-600 border-stone-300 hover:bg-stone-50"
+            }`}
+          >
+            {LEAD_STATUS_LABELS[s]} {countFor(s)}
+          </Link>
+        ))}
+      </div>
+
+      <Card className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs text-stone-500 border-b border-stone-200">
+              <th className="px-4 py-3 font-medium">Lead</th>
+              <th className="px-4 py-3 font-medium">Listing</th>
+              <th className="px-4 py-3 font-medium">Agent</th>
+              <th className="px-4 py-3 font-medium">Source</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium text-right">Received</th>
+            </tr>
+          </thead>
+          <tbody>
+            {leads.map((lead) => (
+              <tr key={lead.id} className="border-b border-stone-100 last:border-0 hover:bg-stone-50">
+                <td className="px-4 py-3">
+                  <Link href={`/leads/${lead.id}`} className="font-medium text-stone-900 hover:text-blue-700">
+                    {lead.name}
+                  </Link>
+                  <div className="text-xs text-stone-500">{lead.email ?? lead.phone ?? "no contact details"}</div>
+                </td>
+                <td className="px-4 py-3 text-stone-600">
+                  {lead.listing ? (
+                    <Link href={`/listings/${lead.listing.id}`} className="hover:text-blue-700">
+                      {lead.listing.suburb} · <span className="font-mono text-xs">{lead.listing.webRef}</span>
+                    </Link>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className="px-4 py-3 text-stone-600">{lead.agent?.name ?? "Unassigned"}</td>
+                <td className="px-4 py-3">
+                  <SourceBadge source={lead.source} />
+                </td>
+                <td className="px-4 py-3">
+                  <LeadStatusBadge status={lead.status} />
+                </td>
+                <td className="px-4 py-3 text-right text-xs text-stone-500 whitespace-nowrap">
+                  {timeAgo(lead.receivedAt)}
+                </td>
+              </tr>
+            ))}
+            {leads.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-10 text-center text-stone-500">
+                  No leads{status ? ` with status "${LEAD_STATUS_LABELS[status] ?? status}"` : ""} yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}

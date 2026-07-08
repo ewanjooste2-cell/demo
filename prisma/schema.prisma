@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("AGENT") // ADMIN | AGENT
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  listings     Listing[]
+  leads        Lead[]
+  notes        LeadNote[]
+}
+
+model Listing {
+  id           String         @id @default(cuid())
+  webRef       String         @unique // Private Property web reference e.g. T4236137
+  title        String
+  address      String
+  suburb       String
+  price        Int
+  status       String         @default("ACTIVE") // ACTIVE | UNDER_OFFER | SOLD | WITHDRAWN | EXPIRED
+  propertyType String         @default("House")
+  bedrooms     Int?
+  url          String? // link to the live Private Property listing
+  listedDate   DateTime       @default(now())
+  createdAt    DateTime       @default(now())
+  agentId      String?
+  agent        User?          @relation(fields: [agentId], references: [id])
+  snapshots    ViewSnapshot[]
+  leads        Lead[]
+}
+
+// One row per listing per report import: cumulative totals as reported by Property24.
+model ViewSnapshot {
+  id         String   @id @default(cuid())
+  listingId  String
+  listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  capturedAt DateTime
+  views      Int      @default(0) // cumulative page views
+  alertsSent Int      @default(0)
+  leadsCount Int      @default(0) // cumulative leads as counted by Property24
+  createdAt  DateTime @default(now())
+
+  @@unique([listingId, capturedAt])
+}
+
+model Lead {
+  id         String     @id @default(cuid())
+  name       String
+  email      String?
+  phone      String?
+  message    String?
+  source     String     @default("MANUAL") // EMAIL | WEBHOOK | IMPORT | MANUAL
+  status     String     @default("NEW") // NEW | CONTACTED | VIEWING | OFFER | WON | LOST
+  receivedAt DateTime   @default(now())
+  createdAt  DateTime   @default(now())
+  listingId  String?
+  listing    Listing?   @relation(fields: [listingId], references: [id])
+  agentId    String?
+  agent      User?      @relation(fields: [agentId], references: [id])
+  notes      LeadNote[]
+
+  @@index([status])
+  @@index([receivedAt])
+}
+
+model LeadNote {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+}
