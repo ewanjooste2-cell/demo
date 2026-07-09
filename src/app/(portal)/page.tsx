@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getUserOrRedirect, agentScope } from "@/lib/session";
 import { formatNumber, formatCompactRand } from "@/lib/format";
 import { Card, KpiTile } from "@/components/ui";
-import { BarsChart } from "@/components/charts";
+import { BarsChart, GroupedBarsChart, TrendChart } from "@/components/charts";
 import { ListingsMap, type MapListing } from "@/components/listings-map";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -28,21 +28,37 @@ export default async function DashboardPage({
   const scope = agentScope(user);
   const now = Date.now();
 
-  const [listings, agents, companySold] = await Promise.all([
-    prisma.listing.findMany({
-      where: scope,
-      include: { snapshots: { orderBy: { capturedAt: "asc" } } },
-    }),
-    prisma.user.findMany({
-      where: { role: "AGENT", active: true },
-      include: { listings: { select: { status: true, price: true, soldDate: true } } },
-    }),
-    // Company-wide sales for the leaderboard — every agent sees the full picture.
-    prisma.listing.findMany({
-      where: { status: "SOLD", ...(periodStart ? { soldDate: { gte: periodStart } } : {}) },
-      select: { price: true, agentId: true },
-    }),
-  ]);
+  const [listings, agents, companySold, presentations, agentCosts, marketingSpend, wonLeads] =
+    await Promise.all([
+      prisma.listing.findMany({
+        where: scope,
+        include: { snapshots: { orderBy: { capturedAt: "asc" } } },
+      }),
+      prisma.user.findMany({
+        where: { role: "AGENT", active: true },
+        include: { listings: { select: { status: true, price: true, soldDate: true } } },
+      }),
+      // Company-wide sales for the leaderboard — every agent sees the full picture.
+      prisma.listing.findMany({
+        where: { status: "SOLD", ...(periodStart ? { soldDate: { gte: periodStart } } : {}) },
+        select: { price: true, agentId: true, commissionPct: true },
+      }),
+      prisma.presentation.findMany({
+        where: periodStart ? { heldAt: { gte: periodStart } } : {},
+        select: { agentId: true, outcome: true },
+      }),
+      prisma.agentCost.findMany({
+        where: periodStart ? { month: { gte: periodStart } } : {},
+        select: { agentId: true, amount: true },
+      }),
+      prisma.marketingSpend.findMany({
+        select: { month: true, amount: true },
+      }),
+      prisma.lead.findMany({
+        where: { status: "WON" },
+        select: { receivedAt: true },
+      }),
+    ]);
 
   // --- Listings online -------------------------------------------------------
   const active = listings.filter((l) => l.status === "ACTIVE");
@@ -115,6 +131,97 @@ export default async function DashboardPage({
     label: a.name.split(" ")[0],
     value: a.salesValue,
   }));
+
+  // --- Days on market: listed → sold, scoped like the sales KPI ----------------
+  const domDays = (l: { listedDate: Date; soldDate: Date | null }) =>
+    (l.soldDate!.getTime() - l.listedDate.getTime()) / DAY;
+  const avgDom =
+    soldInPeriod.length > 0
+      ? soldInPeriod.reduce((sum, l) => sum + domDays(l), 0) / soldInPeriod.length
+      : null;
+  const fastestSale = soldInPeriod.length
+    ? Math.round(Math.min(...soldInPeriod.map(domDays)))
+    : null;
+
+  const monthlyDom: { label: string; value: number | null }[] = [];
+  for (let m = 11; m >= 0; m--) {
+    const ref = new Date(now);
+    ref.setDate(1);
+    ref.setHours(0, 0, 0, 0);
+    ref.setMonth(ref.getMonth() - m);
+    const next = new Date(ref);
+    next.setMonth(next.getMonth() + 1);
+    const sold = listings.filter(
+      (l) =>
+        l.status === "SOLD" &&
+        l.soldDate &&
+        l.soldDate.getTime() >= ref.getTime() &&
+        l.soldDate.getTime() < next.getTime()
+    );
+    monthlyDom.push({
+      label: ref.toLocaleDateString("en-ZA", { month: "short" }),
+      value: sold.length
+        ? Math.round(sold.reduce((sum, l) => sum + domDays(l), 0) / sold.length)
+        : null,
+    });
+  }
+
+  // --- Listing-to-meeting conversion: presentations → signed mandates ----------
+  const mandatesSigned = presentations.filter((p) => p.outcome === "SIGNED").length;
+  const conversionRate = presentations.length ? mandatesSigned / presentations.length : null;
+  const presentationBars = leaderboard.map((a) => {
+    const held = presentations.filter((p) => p.agentId === a.id);
+    return {
+      label: a.name.split(" ")[0],
+      a: held.length,
+      b: held.filter((p) => p.outcome === "SIGNED").length,
+    };
+  });
+
+  // --- Commission vs support cost per agent (company-wide, like the leaderboard)
+  const commissionBars = leaderboard.map((a) => ({
+    label: a.name.split(" ")[0],
+    a: Math.round(
+      companySold
+        .filter((s) => s.agentId === a.id)
+        .reduce((sum, s) => sum + (s.price * s.commissionPct) / 100, 0)
+    ),
+    b: agentCosts.filter((c) => c.agentId === a.id).reduce((sum, c) => sum + c.amount, 0),
+  }));
+  const totalCommission = commissionBars.reduce((sum, b) => sum + b.a, 0);
+  const totalSupport = commissionBars.reduce((sum, b) => sum + b.b, 0);
+  const profitPerAgent = leaderboard.length
+    ? (totalCommission - totalSupport) / leaderboard.length
+    : null;
+
+  // --- Customer acquisition cost: marketing spend / clients won ----------------
+  const spendInPeriod = marketingSpend
+    .filter((s) => !periodStart || s.month.getTime() >= periodStart.getTime())
+    .reduce((sum, s) => sum + s.amount, 0);
+  const clientsInPeriod = wonLeads.filter(
+    (l) => !periodStart || l.receivedAt.getTime() >= periodStart.getTime()
+  ).length;
+  const cac = clientsInPeriod > 0 ? spendInPeriod / clientsInPeriod : null;
+
+  const monthlyCac: { label: string; value: number | null }[] = [];
+  for (let m = 11; m >= 0; m--) {
+    const ref = new Date(now);
+    ref.setDate(1);
+    ref.setHours(0, 0, 0, 0);
+    ref.setMonth(ref.getMonth() - m);
+    const next = new Date(ref);
+    next.setMonth(next.getMonth() + 1);
+    const spend = marketingSpend
+      .filter((s) => s.month.getTime() >= ref.getTime() && s.month.getTime() < next.getTime())
+      .reduce((sum, s) => sum + s.amount, 0);
+    const clients = wonLeads.filter(
+      (l) => l.receivedAt.getTime() >= ref.getTime() && l.receivedAt.getTime() < next.getTime()
+    ).length;
+    monthlyCac.push({
+      label: ref.toLocaleDateString("en-ZA", { month: "short" }),
+      value: clients > 0 ? Math.round(spend / clients) : null,
+    });
+  }
 
   // --- Map ---------------------------------------------------------------------
   const mapListings: MapListing[] = listings
@@ -194,6 +301,80 @@ export default async function DashboardPage({
             Agent sales — {period.label.toLowerCase()}
           </h2>
           <BarsChart data={agentBars} unit="" currency color="aqua" highlightMax />
+        </Card>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
+          Brokerage performance
+        </h2>
+        <p className="text-sm text-stone-500 dark:text-stone-400">
+          Pricing efficiency, mandate conversion and the economics behind every sale
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiTile
+          label="Avg days on market"
+          value={avgDom != null ? `${Math.round(avgDom)}` : "—"}
+          sub={
+            avgDom != null
+              ? `listed → sold · fastest ${fastestSale} days`
+              : "no sales in this period"
+          }
+        />
+        <KpiTile
+          label="Meeting → mandate rate"
+          value={conversionRate != null ? `${Math.round(conversionRate * 100)}%` : "—"}
+          sub={`${mandatesSigned} mandates from ${presentations.length} presentations`}
+          subTone={conversionRate != null && conversionRate >= 0.5 ? "good" : "muted"}
+        />
+        <KpiTile
+          label="Profit per agent"
+          value={profitPerAgent != null ? formatCompactRand(Math.round(profitPerAgent)) : "—"}
+          sub={`${formatCompactRand(totalCommission)} commission − ${formatCompactRand(totalSupport)} support`}
+          subTone={profitPerAgent != null && profitPerAgent < 0 ? "bad" : "muted"}
+        />
+        <KpiTile
+          label="Acquisition cost (CAC)"
+          value={cac != null ? formatCompactRand(Math.round(cac)) : "—"}
+          sub={`${formatCompactRand(spendInPeriod)} marketing · ${clientsInPeriod} client${clientsInPeriod === 1 ? "" : "s"} won`}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-5">
+          <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">
+            Days on market — monthly average
+          </h2>
+          <TrendChart data={monthlyDom} unit="days" />
+        </Card>
+        <Card className="p-5">
+          <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">
+            Presentations → mandates — {period.label.toLowerCase()}
+          </h2>
+          <GroupedBarsChart
+            data={presentationBars}
+            seriesA="Presentations held"
+            seriesB="Mandates signed"
+          />
+        </Card>
+        <Card className="p-5">
+          <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">
+            Commission vs support cost — {period.label.toLowerCase()}
+          </h2>
+          <GroupedBarsChart
+            data={commissionBars}
+            seriesA="Commission earned"
+            seriesB="Support cost"
+            currency
+          />
+        </Card>
+        <Card className="p-5">
+          <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">
+            Cost per acquired client — last 12 months
+          </h2>
+          <TrendChart data={monthlyCac} unit="" currency color="aqua" />
         </Card>
       </div>
 

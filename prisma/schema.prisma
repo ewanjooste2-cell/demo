@@ -18,6 +18,8 @@ model User {
   listings     Listing[]
   leads        Lead[]
   notes        LeadNote[]
+  presentations Presentation[]
+  supportCosts  AgentCost[]
 }
 
 model Listing {
@@ -35,6 +37,7 @@ model Listing {
   longitude    Float?
   soldDate     DateTime? // set when status moves to SOLD; basis for sales reporting
   listedDate   DateTime       @default(now())
+  commissionPct Float         @default(5.0) // gross commission % of sale price earned by the brokerage
   createdAt    DateTime       @default(now())
   agentId      String?
   agent        User?          @relation(fields: [agentId], references: [id])
@@ -74,6 +77,39 @@ model Lead {
 
   @@index([status])
   @@index([receivedAt])
+}
+
+// A listing presentation / mandate pitch held with a prospective seller.
+model Presentation {
+  id        String   @id @default(cuid())
+  agentId   String
+  agent     User     @relation(fields: [agentId], references: [id])
+  heldAt    DateTime
+  outcome   String   @default("PENDING") // SIGNED | PENDING | DECLINED
+  createdAt DateTime @default(now())
+
+  @@index([heldAt])
+}
+
+// Monthly cost of supporting an agent: desk fee, training, admin, tools.
+model AgentCost {
+  id      String   @id @default(cuid())
+  agentId String
+  agent   User     @relation(fields: [agentId], references: [id])
+  month   DateTime // first day of the month
+  amount  Int // rand
+
+  @@unique([agentId, month])
+}
+
+// Monthly marketing spend by channel — drives customer acquisition cost.
+model MarketingSpend {
+  id      String   @id @default(cuid())
+  month   DateTime // first day of the month
+  channel String // e.g. Property portals, Social media, Print & boards, Google Ads
+  amount  Int // rand
+
+  @@unique([month, channel])
 }
 
 model LeadNote {

@@ -11,6 +11,15 @@ function daysAgo(n: number) {
   return d;
 }
 
+/** First day of the month, n months ago. */
+function monthStart(n: number) {
+  const d = new Date();
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  d.setMonth(d.getMonth() - n);
+  return d;
+}
+
 async function main() {
   const password = await bcrypt.hash("Password123!", 10);
 
@@ -67,13 +76,15 @@ async function main() {
     };
     const resolvedStatus = soldAgo != null ? "SOLD" : (status ?? "ACTIVE");
     const soldDate = soldAgo != null ? daysAgo(soldAgo) : null;
+    const commissionPct = 4.5 + ((i * 7) % 6) * 0.5; // 4.5–7%
     const listing = await prisma.listing.upsert({
       where: { webRef: l.webRef },
-      update: { ...data, latitude: lat, longitude: lng, status: resolvedStatus, soldDate },
+      update: { ...data, latitude: lat, longitude: lng, status: resolvedStatus, soldDate, commissionPct },
       create: {
         ...data,
         status: resolvedStatus,
         soldDate,
+        commissionPct,
         latitude: lat,
         longitude: lng,
         listedDate: daysAgo(soldAgo != null ? soldAgo + 60 + i * 3 : 70 - i * 4),
@@ -142,12 +153,91 @@ async function main() {
     }
   }
 
+  // Historical won/lost buyers across the last 12 months — gives CAC a monthly trend.
+  const agentsList = [agent1, agent2, agent3];
+  for (let m = 11; m >= 0; m--) {
+    const won = 2 + ((m * 5) % 3); // 2–4 clients acquired per month
+    for (let k = 0; k < won + 1; k++) {
+      const i = m * 7 + k;
+      const listing = listings[(i * 3) % listings.length];
+      const name = `${firstNames[(i * 5) % firstNames.length]} ${surnames[(i * 11) % surnames.length]}`;
+      const receivedAt = new Date(monthStart(m));
+      receivedAt.setDate(2 + ((i * 9) % 24));
+      receivedAt.setHours(10, 0, 0, 0);
+      await prisma.lead.create({
+        data: {
+          name,
+          email: `${name.toLowerCase().replace(/[^a-z]+/g, ".")}@example.com`,
+          source: sources[i % sources.length],
+          status: k < won ? "WON" : "LOST",
+          receivedAt,
+          listingId: listing.id,
+          agentId: listing.agentId,
+        },
+      });
+    }
+  }
+
+  // Listing presentations (mandate pitches) — last 12 months, per agent.
+  await prisma.presentation.deleteMany({});
+  for (let m = 11; m >= 0; m--) {
+    for (const [ai, agent] of agentsList.entries()) {
+      const count = 2 + ((m * 3 + ai * 5) % 3); // 2–4 presentations per agent per month
+      for (let k = 0; k < count; k++) {
+        const heldAt = new Date(monthStart(m));
+        heldAt.setDate(3 + k * 8 + ai * 2);
+        heldAt.setHours(11, 0, 0, 0);
+        const roll = (m * 7 + ai * 11 + k * 13) % 10;
+        // Recent pitches may still be undecided; otherwise ~55% sign an exclusive mandate.
+        const outcome = m === 0 && k === count - 1 ? "PENDING" : roll < 5.5 ? "SIGNED" : "DECLINED";
+        await prisma.presentation.create({ data: { agentId: agent.id, heldAt, outcome } });
+      }
+    }
+  }
+
+  // Monthly cost of supporting each agent: desk fee, admin, training, tools.
+  await prisma.agentCost.deleteMany({});
+  for (let m = 11; m >= 0; m--) {
+    for (const [ai, agent] of agentsList.entries()) {
+      await prisma.agentCost.create({
+        data: {
+          agentId: agent.id,
+          month: monthStart(m),
+          amount: 16000 + ai * 2500 + ((m * 3 + ai) % 5) * 1400,
+        },
+      });
+    }
+  }
+
+  // Monthly marketing spend by channel.
+  await prisma.marketingSpend.deleteMany({});
+  const channels: [string, number][] = [
+    ["Property portals", 14000],
+    ["Social media", 8000],
+    ["Print & boards", 6000],
+    ["Google Ads", 9000],
+  ];
+  for (let m = 11; m >= 0; m--) {
+    for (const [ci, [channel, base]] of channels.entries()) {
+      await prisma.marketingSpend.create({
+        data: {
+          month: monthStart(m),
+          channel,
+          amount: base + ((m * 5 + ci * 7) % 6) * 900,
+        },
+      });
+    }
+  }
+
   console.log("Seeded:", {
     users: await prisma.user.count(),
     listings: await prisma.listing.count(),
     sold: await prisma.listing.count({ where: { status: "SOLD" } }),
     snapshots: await prisma.viewSnapshot.count(),
     leads: await prisma.lead.count(),
+    presentations: await prisma.presentation.count(),
+    agentCosts: await prisma.agentCost.count(),
+    marketingSpend: await prisma.marketingSpend.count(),
   });
   console.log("Admin login: principal@demo.co.za / Password123!");
   console.log("Agent login: sipho@demo.co.za / Password123!");
