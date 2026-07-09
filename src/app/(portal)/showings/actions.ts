@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { sendWhatsApp } from "@/lib/notify";
 
 const ALLOWED = new Set(["REQUESTED", "CONFIRMED", "COMPLETED", "CANCELLED"]);
 
@@ -32,18 +33,42 @@ export async function createShowing(formData: FormData) {
   const startsAt = new Date(`${date}T${time}:00`);
   if (Number.isNaN(startsAt.getTime())) return;
   const minutes = kind === "OPEN_HOUSE" ? 120 : 45;
+  const agentId = listing.agentId ?? user.id;
+  // Booking your own showing confirms it; booking on behalf of another agent
+  // opens a request and pings them on WhatsApp.
+  const isOwn = agentId === user.id;
 
-  await prisma.showing.create({
+  const showing = await prisma.showing.create({
     data: {
       listingId,
       leadId: leadId || null,
-      agentId: listing.agentId ?? user.id,
+      agentId,
       startsAt,
       endsAt: new Date(startsAt.getTime() + minutes * 60 * 1000),
       kind,
-      status: "CONFIRMED",
+      status: isOwn ? "CONFIRMED" : "REQUESTED",
     },
+    include: { agent: true, lead: { select: { name: true } } },
   });
+
+  if (!isOwn) {
+    const when = startsAt.toLocaleString("en-ZA", {
+      weekday: "long",
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    await sendWhatsApp(
+      showing.agent,
+      `Hi ${showing.agent.name.split(" ")[0]}, you have been requested for a ${
+        kind === "OPEN_HOUSE" ? "open house" : "showing"
+      }: ${listing.title}, ${listing.suburb} — ${when}${
+        showing.lead ? ` (buyer: ${showing.lead.name})` : ""
+      }. Open the portal to confirm or decline.`
+    );
+  }
+
   revalidatePath("/showings");
   redirect("/showings");
 }

@@ -22,6 +22,18 @@ export function UserForm() {
         <input id="new-email" name="email" type="email" required className={inputClass} />
       </div>
       <div>
+        <label className={labelClass} htmlFor="new-phone">
+          WhatsApp number (for showing requests)
+        </label>
+        <input
+          id="new-phone"
+          name="phone"
+          type="tel"
+          placeholder="+27 82 123 4567"
+          className={inputClass}
+        />
+      </div>
+      <div>
         <label className={labelClass} htmlFor="new-password">
           Password (min 8 characters)
         </label>

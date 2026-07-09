@@ -4,8 +4,11 @@ import { formatNumber, formatCompactRand } from "@/lib/format";
 import { Card, StatTile } from "@/components/ui";
 import { BarsChart, GroupedBarsChart } from "@/components/charts";
 import { ListingsMap, type MapListing } from "@/components/listings-map";
+import Link from "next/link";
 import { DateRangePicker } from "@/components/date-range";
 import { RANGE_PRESETS } from "@/lib/ranges";
+import { formatRand, DEAL_STAGE_LABELS } from "@/lib/format";
+import { markPayoutPaid } from "./finance/actions";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -129,6 +132,14 @@ export default async function DashboardPage({
       prisma.lead.findMany({ where: { status: "WON" }, select: { receivedAt: true } }),
     ]);
 
+  const deals = await prisma.deal.findMany({
+    include: {
+      listing: { select: { title: true, webRef: true } },
+      agent: { select: { name: true } },
+    },
+    orderBy: { openedAt: "desc" },
+  });
+
   // --- Listings online ---------------------------------------------------------
   const active = listings.filter((l) => l.status === "ACTIVE");
   const underOffer = listings.filter((l) => l.status === "UNDER_OFFER");
@@ -200,6 +211,18 @@ export default async function DashboardPage({
       ? (priorCommission - priorSupport) / agents.length
       : null
   );
+
+  // --- Deal-room finance: pipeline commission, splits and payouts -------------------
+  const dealGross = (d: { salePrice: number; commissionPct: number }) =>
+    Math.round((d.salePrice * d.commissionPct) / 100);
+  const dealAgentShare = (d: { salePrice: number; commissionPct: number; agentSplitPct: number }) =>
+    Math.round((dealGross(d) * d.agentSplitPct) / 100);
+  const pipelineCommission = deals
+    .filter((d) => d.stage !== "REGISTERED")
+    .reduce((s, d) => s + dealGross(d), 0);
+  const payoutsDue = deals
+    .filter((d) => d.stage === "REGISTERED" && d.payoutStatus === "PENDING")
+    .reduce((s, d) => s + dealAgentShare(d), 0);
 
   // --- Customer acquisition cost ---------------------------------------------------
   const spendIn = (test: (t: Date) => boolean) =>
@@ -318,7 +341,7 @@ export default async function DashboardPage({
           label="Commission"
           value={formatCompactRand(commission)}
           delta={commissionDelta != null ? { pct: commissionDelta } : null}
-          sub={`net ${formatCompactRand(commission - support)} after support`}
+          sub={`net ${formatCompactRand(commission - support)} after support · ${formatCompactRand(pipelineCommission)} in pipeline`}
         />
         <StatTile
           label="Listing views"
@@ -423,6 +446,93 @@ export default async function DashboardPage({
           </ol>
         </Card>
       </div>
+
+      <Card className="overflow-x-auto">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-4">
+          <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300">
+            Commission ledger
+          </h2>
+          <span className="text-xs text-stone-500 dark:text-stone-400">
+            {formatCompactRand(pipelineCommission)} in pipeline
+            {payoutsDue > 0 && ` · ${formatCompactRand(payoutsDue)} payouts due`}
+          </span>
+        </div>
+        <table className="w-full text-sm mt-2">
+          <thead>
+            <tr className="text-left text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-800">
+              <th className="px-5 py-3 font-medium">Deal</th>
+              <th className="px-4 py-3 font-medium">Agent</th>
+              <th className="px-4 py-3 font-medium">Stage</th>
+              <th className="px-4 py-3 font-medium text-right">Gross comm.</th>
+              <th className="px-4 py-3 font-medium text-right">Agent share</th>
+              <th className="px-4 py-3 font-medium text-right">Brokerage net</th>
+              <th className="px-4 py-3 font-medium">Payout</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deals.map((d) => {
+              const g = dealGross(d);
+              const a = dealAgentShare(d);
+              return (
+                <tr key={d.id} className="border-b border-stone-100 dark:border-stone-800 last:border-0">
+                  <td className="px-5 py-3">
+                    <Link
+                      href={`/deals/${d.id}`}
+                      className="font-medium text-stone-900 dark:text-stone-100 hover:text-blue-700 dark:hover:text-blue-400"
+                    >
+                      {d.listing.title}
+                    </Link>
+                    <div className="text-xs text-stone-500 dark:text-stone-400">{d.listing.webRef}</div>
+                  </td>
+                  <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap">
+                    {d.agent?.name ?? "—"}
+                    <span className="text-xs text-stone-400 dark:text-stone-500"> · {d.agentSplitPct}%</span>
+                  </td>
+                  <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap">
+                    {DEAL_STAGE_LABELS[d.stage]}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums text-stone-900 dark:text-stone-100 whitespace-nowrap">
+                    {formatRand(g)}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums text-stone-600 dark:text-stone-400 whitespace-nowrap">
+                    {formatRand(a)}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums text-stone-900 dark:text-stone-100 whitespace-nowrap">
+                    {formatRand(g - a)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {d.stage !== "REGISTERED" ? (
+                      <span className="text-xs text-stone-400 dark:text-stone-500">awaiting registration</span>
+                    ) : d.payoutStatus === "PAID" ? (
+                      <span className="inline-flex items-center rounded-md bg-green-50 text-green-700 dark:bg-green-950/60 dark:text-green-400 px-2 py-0.5 text-xs font-medium">
+                        Paid
+                      </span>
+                    ) : user.role === "ADMIN" ? (
+                      <form action={markPayoutPaid.bind(null, d.id)}>
+                        <button
+                          type="submit"
+                          className="text-xs font-medium text-blue-700 dark:text-blue-400 hover:underline"
+                        >
+                          Mark paid
+                        </button>
+                      </form>
+                    ) : (
+                      <span className="text-xs text-amber-700 dark:text-amber-400">Pending</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {deals.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-5 py-8 text-center text-stone-500 dark:text-stone-400">
+                  No deals in the ledger yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </Card>
 
       <Card className="p-5">
         <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">

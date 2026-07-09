@@ -118,8 +118,8 @@ export function ListingsMap({ listings }: { listings: MapListing[] }) {
   }, [isDark, ready]);
 
   return (
-    <div className="relative">
-      <div ref={containerRef} className="h-105 rounded-xl z-0 bg-stone-100 dark:bg-stone-800" />
+    <div className="relative overflow-hidden rounded-xl">
+      <div ref={containerRef} className="h-72 sm:h-105 rounded-xl z-0 bg-stone-100 dark:bg-stone-800" />
       <div className="absolute bottom-3 left-3 z-[500] bg-white/90 dark:bg-stone-900/90 border border-stone-200 dark:border-stone-700 rounded-lg px-3 py-2 flex gap-4 text-xs">
         {Object.entries(STATUS_COLORS).map(([status, color]) => (
           <span key={status} className="flex items-center gap-1.5 text-stone-700 dark:text-stone-300">

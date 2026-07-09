@@ -270,7 +270,8 @@ export function GroupedBarsChart({
           <Bar dataKey="b" name={seriesB} fill={t.aqua} radius={[4, 4, 0, 0]} maxBarSize={28} />
         </BarChart>
       </ResponsiveContainer>
-      <table className="sr-only">
+      <div className="sr-only">
+      <table>
         <thead>
           <tr>
             <th scope="col">Category</th>
@@ -288,6 +289,7 @@ export function GroupedBarsChart({
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

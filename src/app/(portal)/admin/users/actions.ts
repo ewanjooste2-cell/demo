@@ -18,6 +18,7 @@ export async function createUser(_prev: { error?: string } | undefined, formData
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const role = String(formData.get("role") ?? "AGENT") === "ADMIN" ? "ADMIN" : "AGENT";
+  const phone = String(formData.get("phone") ?? "").replace(/[^\d+]/g, "") || null;
 
   if (!name || !email || password.length < 8) {
     return { error: "Name, email and a password of at least 8 characters are required." };
@@ -27,7 +28,14 @@ export async function createUser(_prev: { error?: string } | undefined, formData
   }
 
   await prisma.user.create({
-    data: { name, email, role, passwordHash: await bcrypt.hash(password, 10) },
+    data: {
+      name,
+      email,
+      role,
+      phone,
+      passwordHash: await bcrypt.hash(password, 10),
+      calendarToken: `cal-${crypto.randomUUID()}`,
+    },
   });
   revalidatePath("/admin/users");
   return {};

@@ -199,8 +199,10 @@ export function StatTile({
           </span>
         )}
       </div>
-      <div className="flex items-baseline gap-2 mt-2">
-        <div className="text-4xl font-semibold text-stone-900 dark:text-stone-100">{value}</div>
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-2">
+        <div className="text-3xl sm:text-4xl font-semibold text-stone-900 dark:text-stone-100">
+          {value}
+        </div>
         {chip}
       </div>
       <div className="flex items-end justify-between gap-2 mt-2 min-h-[28px]">

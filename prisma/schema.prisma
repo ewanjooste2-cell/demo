@@ -8,13 +8,15 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  role         String    @default("AGENT") // ADMIN | AGENT
-  active       Boolean   @default(true)
-  createdAt    DateTime  @default(now())
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  role          String    @default("AGENT") // ADMIN | AGENT
+  active        Boolean   @default(true)
+  phone         String? // WhatsApp number for showing-request notifications
+  calendarToken String?   @unique // secret for the personal ICS subscription feed
+  createdAt     DateTime  @default(now())
   listings     Listing[]
   leads        Lead[]
   notes        LeadNote[]
@@ -23,6 +25,21 @@ model User {
   deals         Deal[]
   showings      Showing[]
   tasks         Task[]
+  notifications Notification[]
+}
+
+// Outbound message log — WhatsApp via Twilio when configured, simulated otherwise.
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   String   @default("WHATSAPP")
+  to        String
+  body      String
+  status    String   @default("SIMULATED") // SENT | SIMULATED | FAILED
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model Listing {

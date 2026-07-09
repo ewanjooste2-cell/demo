@@ -25,23 +25,23 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: "principal@demo.co.za" },
-    update: {},
-    create: { name: "Petro Venter", email: "principal@demo.co.za", passwordHash: password, role: "ADMIN" },
+    update: { phone: "+27821110001", calendarToken: "cal-petro-7f3a" },
+    create: { name: "Petro Venter", email: "principal@demo.co.za", passwordHash: password, role: "ADMIN", phone: "+27821110001", calendarToken: "cal-petro-7f3a" },
   });
   const agent1 = await prisma.user.upsert({
     where: { email: "sipho@demo.co.za" },
-    update: {},
-    create: { name: "Sipho Dlamini", email: "sipho@demo.co.za", passwordHash: password, role: "AGENT" },
+    update: { phone: "+27821110002", calendarToken: "cal-sipho-2b9c" },
+    create: { name: "Sipho Dlamini", email: "sipho@demo.co.za", passwordHash: password, role: "AGENT", phone: "+27821110002", calendarToken: "cal-sipho-2b9c" },
   });
   const agent2 = await prisma.user.upsert({
     where: { email: "anke@demo.co.za" },
-    update: {},
-    create: { name: "Anke du Toit", email: "anke@demo.co.za", passwordHash: password, role: "AGENT" },
+    update: { phone: "+27821110003", calendarToken: "cal-anke-5d1e" },
+    create: { name: "Anke du Toit", email: "anke@demo.co.za", passwordHash: password, role: "AGENT", phone: "+27821110003", calendarToken: "cal-anke-5d1e" },
   });
   const agent3 = await prisma.user.upsert({
     where: { email: "marius@demo.co.za" },
-    update: {},
-    create: { name: "Marius Steyn", email: "marius@demo.co.za", passwordHash: password, role: "AGENT" },
+    update: { phone: "+27821110004", calendarToken: "cal-marius-8a4f" },
+    create: { name: "Marius Steyn", email: "marius@demo.co.za", passwordHash: password, role: "AGENT", phone: "+27821110004", calendarToken: "cal-marius-8a4f" },
   });
 
   // Centurion, Gauteng listings. soldAgo (days) marks a completed sale.
@@ -315,6 +315,18 @@ async function main() {
         status: past ? (i % 6 === 5 ? "CANCELLED" : "COMPLETED") : showingStatuses[i % showingStatuses.length],
         feedback: past && i % 6 !== 5 ? "Buyer liked the layout; concerned about street noise." : null,
       },
+    });
+  }
+
+  // --- WhatsApp outbox: a couple of showing-request notifications ---------------
+  await prisma.notification.deleteMany({});
+  const notifSamples: [typeof agent1, string][] = [
+    [agent1, "Hi Sipho, you have a new showing request: 3 Bedroom House in Eldoraigne, tomorrow 10:00 (buyer: Thandi Nkosi). Open the portal to confirm."],
+    [agent2, "Hi Anke, you have a new showing request: 4 Bedroom Family Home in Irene, Saturday 14:00 (open house). Open the portal to confirm."],
+  ];
+  for (const [u, body] of notifSamples) {
+    await prisma.notification.create({
+      data: { userId: u.id, to: u.phone!, body, status: "SIMULATED", createdAt: daysAgo(1) },
     });
   }
 

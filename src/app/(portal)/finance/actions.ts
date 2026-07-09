@@ -11,5 +11,5 @@ export async function markPayoutPaid(dealId: string) {
   const deal = await prisma.deal.findUnique({ where: { id: dealId } });
   if (!deal || deal.stage !== "REGISTERED") return;
   await prisma.deal.update({ where: { id: dealId }, data: { payoutStatus: "PAID" } });
-  revalidatePath("/finance");
+  revalidatePath("/");
 }

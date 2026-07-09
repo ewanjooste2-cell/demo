@@ -3,7 +3,13 @@ import { getUserOrRedirect } from "@/lib/session";
 import { Card, buttonClass, inputClass, labelClass } from "@/components/ui";
 import { createShowing } from "../actions";
 
-export default async function NewShowingPage() {
+export default async function NewShowingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const { date } = await searchParams;
+  const defaultDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined;
   await getUserOrRedirect();
 
   const [listings, leads] = await Promise.all([
@@ -66,6 +72,7 @@ export default async function NewShowingPage() {
                 name="date"
                 type="date"
                 required
+                defaultValue={defaultDate}
                 className={`${inputClass} [color-scheme:light] dark:[color-scheme:dark]`}
               />
             </div>

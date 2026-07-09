@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getUserOrRedirect, agentScope } from "@/lib/session";
-import { formatRand, formatNumber, LISTING_STATUSES, LISTING_STATUS_LABELS } from "@/lib/format";
+import {
+  formatRand,
+  formatNumber,
+  LISTING_STATUSES,
+  LISTING_STATUS_LABELS,
+  DEAL_STAGES,
+  DEAL_STAGE_LABELS,
+} from "@/lib/format";
 import { Card, ListingStatusBadge, buttonClass } from "@/components/ui";
 
 const pillClass = (selected: boolean) =>
@@ -20,30 +27,37 @@ export default async function ListingsPage({
   const user = await getUserOrRedirect();
   const scope = agentScope(user);
 
-  const [listings, counts] = await Promise.all([
+  const [listings, counts, dealCounts] = await Promise.all([
     prisma.listing.findMany({
       where: { ...scope, ...(status ? { status } : {}) },
       include: {
         agent: true,
         snapshots: { orderBy: { capturedAt: "desc" }, take: 1 },
         _count: { select: { leads: true } },
+        deals: { orderBy: { openedAt: "desc" }, take: 1 },
       },
       orderBy: { listedDate: "desc" },
     }),
     prisma.listing.groupBy({ by: ["status"], where: scope, _count: true }),
+    prisma.deal.groupBy({ by: ["stage"], _count: true }),
   ]);
 
   const countFor = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
   const total = counts.reduce((sum, c) => sum + c._count, 0);
+  const dealCountFor = (s: string) => dealCounts.find((c) => c.stage === s)?._count ?? 0;
+  const dealsTotal = dealCounts.reduce((sum, c) => sum + c._count, 0);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Listings</h1>
+          <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
+            Listings &amp; deals
+          </h1>
           <p className="text-sm text-stone-500 dark:text-stone-400">
             {listings.length} listing{listings.length === 1 ? "" : "s"}
             {user.role !== "ADMIN" && " assigned to you"}
+            {dealsTotal > 0 && ` · ${dealsTotal} deal${dealsTotal === 1 ? "" : "s"} in the pipeline`}
           </p>
         </div>
         <Link href="/listings/new" className={buttonClass}>
@@ -62,6 +76,24 @@ export default async function ListingsPage({
         ))}
       </div>
 
+      {dealsTotal > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {DEAL_STAGES.map((s) => (
+            <div
+              key={s}
+              className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-3 py-2"
+            >
+              <div className="text-xs text-stone-500 dark:text-stone-400 truncate">
+                {DEAL_STAGE_LABELS[s]}
+              </div>
+              <div className="text-lg font-semibold text-stone-900 dark:text-stone-100">
+                {dealCountFor(s)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <Card className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -71,6 +103,7 @@ export default async function ListingsPage({
               <th className="px-4 py-3 font-medium">Price</th>
               <th className="px-4 py-3 font-medium">Agent</th>
               <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Deal</th>
               <th className="px-4 py-3 font-medium text-right">Views</th>
               <th className="px-4 py-3 font-medium text-right">Leads</th>
             </tr>
@@ -92,6 +125,33 @@ export default async function ListingsPage({
                 <td className="px-4 py-3">
                   <ListingStatusBadge status={l.status} />
                 </td>
+                <td className="px-4 py-3">
+                  {l.deals[0] ? (
+                    <Link
+                      href={`/deals/${l.deals[0].id}`}
+                      className="group inline-block"
+                      title={`Open deal room — ${DEAL_STAGE_LABELS[l.deals[0].stage]}`}
+                    >
+                      <span className="flex items-center gap-0.5 w-20">
+                        {DEAL_STAGES.map((s, i) => (
+                          <span
+                            key={s}
+                            className={`h-1.5 flex-1 rounded-full ${
+                              i <= DEAL_STAGES.indexOf(l.deals[0].stage as (typeof DEAL_STAGES)[number])
+                                ? "bg-blue-600"
+                                : "bg-stone-200 dark:bg-stone-700"
+                            }`}
+                          />
+                        ))}
+                      </span>
+                      <span className="text-xs text-stone-500 dark:text-stone-400 group-hover:text-blue-700 dark:group-hover:text-blue-400">
+                        {DEAL_STAGE_LABELS[l.deals[0].stage]}
+                      </span>
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-stone-300 dark:text-stone-600">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-right tabular-nums text-stone-900 dark:text-stone-100">
                   {formatNumber(l.snapshots[0]?.views ?? 0)}
                 </td>
@@ -100,7 +160,7 @@ export default async function ListingsPage({
             ))}
             {listings.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-stone-500 dark:text-stone-400">
+                <td colSpan={8} className="px-4 py-10 text-center text-stone-500 dark:text-stone-400">
                   No listings yet. Add your first listing to start tracking engagement.
                 </td>
               </tr>

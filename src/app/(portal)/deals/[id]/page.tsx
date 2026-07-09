@@ -46,8 +46,8 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="text-xs text-stone-500 dark:text-stone-400">
-            <Link href="/deals" className="hover:text-stone-900 dark:hover:text-stone-100">
-              Deals
+            <Link href="/listings" className="hover:text-stone-900 dark:hover:text-stone-100">
+              Listings &amp; deals
             </Link>{" "}
             / {deal.listing.webRef}
           </div>

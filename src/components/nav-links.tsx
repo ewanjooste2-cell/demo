@@ -7,10 +7,8 @@ const LINKS = [
   { href: "/", label: "Dashboard" },
   { href: "/listings", label: "Listings" },
   { href: "/leads", label: "Leads" },
-  { href: "/deals", label: "Deals" },
   { href: "/showings", label: "Showings" },
   { href: "/cma", label: "CMA" },
-  { href: "/finance", label: "Finance" },
   { href: "/team", label: "Team" },
   { href: "/import", label: "Import" },
 ];
@@ -28,7 +26,7 @@ export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
           <Link
             key={link.href}
             href={link.href}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap ${
               active
                 ? "bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100"
                 : "text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-50 dark:hover:bg-stone-800/60"
