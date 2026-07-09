@@ -7,6 +7,11 @@ const LINKS = [
   { href: "/", label: "Dashboard" },
   { href: "/listings", label: "Listings" },
   { href: "/leads", label: "Leads" },
+  { href: "/deals", label: "Deals" },
+  { href: "/showings", label: "Showings" },
+  { href: "/cma", label: "CMA" },
+  { href: "/finance", label: "Finance" },
+  { href: "/team", label: "Team" },
   { href: "/import", label: "Import" },
 ];
 
@@ -15,7 +20,7 @@ export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
   const links = isAdmin ? [...LINKS, { href: "/admin/users", label: "Users" }] : LINKS;
 
   return (
-    <nav className="flex items-center gap-1">
+    <nav className="flex items-center gap-1 overflow-x-auto">
       {links.map((link) => {
         const active =
           link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);

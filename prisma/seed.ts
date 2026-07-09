@@ -124,7 +124,12 @@ async function main() {
     }
   }
 
-  // Leads across the last ~8 weeks.
+  // Leads across the last ~8 weeks. Deals/showings/tasks reference leads, so
+  // they clear first to keep re-seeding idempotent.
+  await prisma.task.deleteMany({});
+  await prisma.dealDocument.deleteMany({});
+  await prisma.deal.deleteMany({});
+  await prisma.showing.deleteMany({});
   await prisma.leadNote.deleteMany({});
   await prisma.lead.deleteMany({});
   const firstNames = ["Johan", "Thandi", "Pieter", "Naledi", "Chris", "Zanele", "Riaan", "Lerato", "Megan", "Kabelo", "Elna", "David", "Busi", "Werner", "Aisha", "Frik", "Nomsa", "Grant", "Carla", "Tebogo", "Sarah", "Neil", "Precious", "Jaco"];
@@ -237,6 +242,109 @@ async function main() {
     }
   }
 
+  // --- Deal rooms: transactions from offer to registration ---------------------
+  const DOC_SET: [string, string][] = [
+    ["Exclusive mandate", "MANDATE"],
+    ["Offer to purchase", "OTP"],
+    ["FICA — buyer", "FICA"],
+    ["FICA — seller", "FICA"],
+    ["Property condition disclosure", "DISCLOSURE"],
+    ["Compliance certificates (electrical, gas)", "COMPLIANCE"],
+    ["Bond grant letter", "BOND"],
+  ];
+  // stageIdx: how far the deal has progressed; docs up to that point are signed.
+  const STAGES = ["OFFER", "OTP_SIGNED", "BOND", "INSPECTIONS", "TRANSFER", "REGISTERED"];
+  const dealPlans = [
+    { webRef: "T4236106", stage: 1, daysOpen: 18 }, // penthouse under offer
+    { webRef: "T4235901", stage: 4, daysOpen: 45 }, // sold, in transfer
+    { webRef: "T4235905", stage: 5, daysOpen: 60 }, // registered
+    { webRef: "T4235908", stage: 2, daysOpen: 30 }, // sold, bond stage
+    { webRef: "T4236103", stage: 0, daysOpen: 4 }, // fresh offer on active listing
+  ];
+  const allLeads = await prisma.lead.findMany({ where: { status: { in: ["OFFER", "WON"] } }, take: 10 });
+  const deals = [];
+  for (const [di, plan] of dealPlans.entries()) {
+    const listing = listings.find((l) => l.webRef === plan.webRef)!;
+    const deal = await prisma.deal.create({
+      data: {
+        listingId: listing.id,
+        leadId: allLeads[di % allLeads.length]?.id,
+        agentId: listing.agentId,
+        stage: STAGES[plan.stage],
+        salePrice: Math.round((listing.price * (97 - di)) / 100 / 1000) * 1000, // slightly under asking
+        commissionPct: listing.commissionPct ?? 5,
+        agentSplitPct: 55 + (di % 3) * 5,
+        payoutStatus: plan.stage === 5 ? (di % 2 === 0 ? "PAID" : "PENDING") : "PENDING",
+        openedAt: daysAgo(plan.daysOpen),
+        closedAt: plan.stage === 5 ? daysAgo(plan.daysOpen - 40) : null,
+      },
+    });
+    deals.push(deal);
+    for (const [i, [name, kind]] of DOC_SET.entries()) {
+      // Docs earlier in the pack sign first as the deal advances.
+      const threshold = (i / DOC_SET.length) * 5;
+      const status =
+        plan.stage > threshold + 1 ? "SIGNED" : plan.stage > threshold ? "SENT" : i < 2 ? "UPLOADED" : "REQUIRED";
+      await prisma.dealDocument.create({ data: { dealId: deal.id, name, kind, status } });
+    }
+  }
+
+  // --- Showings: private viewings + open houses around this week ----------------
+  const online = listings.filter((l) => l.status === "ACTIVE" || l.status === "UNDER_OFFER");
+  const contactableLeads = await prisma.lead.findMany({
+    where: { status: { in: ["CONTACTED", "VIEWING", "NEW"] } },
+    take: 20,
+  });
+  const showingStatuses = ["CONFIRMED", "REQUESTED", "CONFIRMED", "COMPLETED", "CONFIRMED", "CANCELLED"];
+  for (let i = 0; i < 14; i++) {
+    const listing = online[i % online.length];
+    const dayOffset = (i % 10) - 4; // from 4 days ago to 5 days ahead
+    const start = new Date(Date.now() + dayOffset * DAY);
+    start.setHours(9 + (i * 2) % 8, i % 2 === 0 ? 0 : 30, 0, 0);
+    const end = new Date(start.getTime() + 45 * 60 * 1000);
+    const past = start.getTime() < Date.now();
+    const openHouse = i % 5 === 4;
+    await prisma.showing.create({
+      data: {
+        listingId: listing.id,
+        leadId: openHouse ? null : contactableLeads[i % contactableLeads.length]?.id,
+        agentId: listing.agentId!,
+        startsAt: start,
+        endsAt: openHouse ? new Date(start.getTime() + 2 * 60 * 60 * 1000) : end,
+        kind: openHouse ? "OPEN_HOUSE" : "PRIVATE",
+        status: past ? (i % 6 === 5 ? "CANCELLED" : "COMPLETED") : showingStatuses[i % showingStatuses.length],
+        feedback: past && i % 6 !== 5 ? "Buyer liked the layout; concerned about street noise." : null,
+      },
+    });
+  }
+
+  // --- Team tasks ----------------------------------------------------------------
+  const taskPlans: [string, number, string, number | null][] = [
+    // title, deal index, status, due in days (null = none)
+    ["Chase bond originator for grant letter", 3, "DOING", 1],
+    ["Book electrical compliance inspection", 1, "TODO", 2],
+    ["Collect FICA docs from buyer", 0, "TODO", 1],
+    ["Confirm transfer attorney appointment", 1, "DOING", 3],
+    ["Order for-sale board removal", 2, "DONE", null],
+    ["Send OTP to seller for counter-signature", 4, "DOING", 0],
+    ["Schedule professional photos — Midstream listing", -1, "TODO", 4],
+    ["Follow up open-house attendees", -1, "TODO", 2],
+    ["Submit commission invoice to attorneys", 2, "DONE", null],
+  ];
+  for (const [ti, [title, dealIdx, status, dueIn]] of taskPlans.entries()) {
+    const deal = dealIdx >= 0 ? deals[dealIdx] : null;
+    await prisma.task.create({
+      data: {
+        title,
+        dealId: deal?.id,
+        assigneeId: deal?.agentId ?? agentsList[ti % agentsList.length].id,
+        status,
+        dueAt: dueIn != null ? daysAgo(-dueIn) : null,
+        createdAt: daysAgo(3 + (ti % 5)),
+      },
+    });
+  }
+
   console.log("Seeded:", {
     users: await prisma.user.count(),
     listings: await prisma.listing.count(),
@@ -246,6 +354,10 @@ async function main() {
     presentations: await prisma.presentation.count(),
     agentCosts: await prisma.agentCost.count(),
     marketingSpend: await prisma.marketingSpend.count(),
+    deals: await prisma.deal.count(),
+    dealDocuments: await prisma.dealDocument.count(),
+    showings: await prisma.showing.count(),
+    tasks: await prisma.task.count(),
   });
   console.log("Admin login: principal@demo.co.za / Password123!");
   console.log("Agent login: sipho@demo.co.za / Password123!");

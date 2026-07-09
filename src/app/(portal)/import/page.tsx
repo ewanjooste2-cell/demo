@@ -11,10 +11,10 @@ export default function ImportPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Import from Private Property</h1>
+        <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Import portal data</h1>
         <p className="text-sm text-stone-500 dark:text-stone-400">
-          Two ways to get your Private Property data in: paste an enquiry email to log a lead, or
-          upload the listing report export to record views.
+          Works with Private Property, Property24 or any portal export: paste an enquiry email to
+          log a lead, or upload the listing report to record views.
         </p>
       </div>
 
@@ -22,7 +22,7 @@ export default function ImportPage() {
         <Card className="p-6">
           <h2 className="font-medium text-stone-900 dark:text-stone-100">Paste a lead email</h2>
           <p className="text-sm text-stone-500 dark:text-stone-400 mt-1 mb-4">
-            Copy the whole enquiry notification email from Private Property and paste it here. The
+            Copy the whole enquiry notification email from your portal and paste it here. The
             portal picks out the name, contact details, message and web ref, and links the lead to
             the right listing automatically.
           </p>
@@ -47,7 +47,7 @@ export default function ImportPage() {
         <Card className="p-6">
           <h2 className="font-medium text-stone-900 dark:text-stone-100">Upload the listing report</h2>
           <p className="text-sm text-stone-500 dark:text-stone-400 mt-1 mb-4">
-            In the Private Property agent portal, export your listing report (views, alerts and
+            In your portal&apos;s agent dashboard, export the listing report (views, alerts and
             leads per listing) and upload it here. Each upload records a snapshot, so uploading
             weekly builds the trend graphs.
           </p>
@@ -101,7 +101,7 @@ export default function ImportPage() {
         <h2 className="font-medium text-stone-900 dark:text-stone-100">Automatic lead capture (webhook)</h2>
         <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
           To log leads automatically without pasting: set up a rule in Outlook/Power Automate (or a
-          service like Mailparser) that forwards Private Property enquiry emails as a POST request
+          service like Mailparser) that forwards portal enquiry emails as a POST request
           to <code className="bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded text-xs">/api/webhooks/lead</code>{" "}
           with the header{" "}
           <code className="bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded text-xs">x-webhook-token</code> set to

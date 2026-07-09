@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Estate Portal",
-  description: "Private Property engagement and leads hub",
+  description: "Listings, leads and deals — one hub for your portal data",
 };
 
 // Runs before paint: applies the saved theme (or the OS preference) so there is

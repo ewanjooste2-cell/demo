@@ -68,3 +68,35 @@ export const SOURCE_LABELS: Record<string, string> = {
   IMPORT: "Report import",
   MANUAL: "Manual",
 };
+
+export const DEAL_STAGES = [
+  "OFFER",
+  "OTP_SIGNED",
+  "BOND",
+  "INSPECTIONS",
+  "TRANSFER",
+  "REGISTERED",
+] as const;
+
+export const DEAL_STAGE_LABELS: Record<string, string> = {
+  OFFER: "Offer",
+  OTP_SIGNED: "OTP signed",
+  BOND: "Bond approval",
+  INSPECTIONS: "Inspections",
+  TRANSFER: "Transfer",
+  REGISTERED: "Registered",
+};
+
+export const DOC_STATUS_LABELS: Record<string, string> = {
+  REQUIRED: "Required",
+  UPLOADED: "Uploaded",
+  SENT: "Sent for signature",
+  SIGNED: "Signed",
+};
+
+export const SHOWING_STATUS_LABELS: Record<string, string> = {
+  REQUESTED: "Requested",
+  CONFIRMED: "Confirmed",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};

@@ -20,6 +20,9 @@ model User {
   notes        LeadNote[]
   presentations Presentation[]
   supportCosts  AgentCost[]
+  deals         Deal[]
+  showings      Showing[]
+  tasks         Task[]
 }
 
 model Listing {
@@ -43,6 +46,8 @@ model Listing {
   agent        User?          @relation(fields: [agentId], references: [id])
   snapshots    ViewSnapshot[]
   leads        Lead[]
+  deals        Deal[]
+  showings     Showing[]
 }
 
 // One row per listing per report import: cumulative totals as reported by Property24.
@@ -74,9 +79,73 @@ model Lead {
   agentId    String?
   agent      User?      @relation(fields: [agentId], references: [id])
   notes      LeadNote[]
+  deals      Deal[]
+  showings   Showing[]
 
   @@index([status])
   @@index([receivedAt])
+}
+
+// A transaction from accepted offer to registration — the paperless deal room.
+model Deal {
+  id            String         @id @default(cuid())
+  listingId     String
+  listing       Listing        @relation(fields: [listingId], references: [id])
+  leadId        String?
+  lead          Lead?          @relation(fields: [leadId], references: [id])
+  agentId       String?
+  agent         User?          @relation(fields: [agentId], references: [id])
+  stage         String         @default("OFFER") // OFFER | OTP_SIGNED | BOND | INSPECTIONS | TRANSFER | REGISTERED
+  salePrice     Int
+  commissionPct Float          @default(5.0)
+  agentSplitPct Float          @default(60.0) // agent's share of gross commission
+  payoutStatus  String         @default("PENDING") // PENDING | PAID
+  openedAt      DateTime       @default(now())
+  closedAt      DateTime? // set when the deal registers
+  documents     DealDocument[]
+  tasks         Task[]
+}
+
+// Contract / disclosure / compliance paperwork tracked per deal.
+model DealDocument {
+  id        String   @id @default(cuid())
+  dealId    String
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  name      String
+  kind      String // MANDATE | OTP | FICA | DISCLOSURE | COMPLIANCE | BOND
+  status    String   @default("REQUIRED") // REQUIRED | UPLOADED | SENT | SIGNED
+  updatedAt DateTime @updatedAt
+}
+
+// A viewing appointment or open house.
+model Showing {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  leadId    String?
+  lead      Lead?    @relation(fields: [leadId], references: [id])
+  agentId   String
+  agent     User     @relation(fields: [agentId], references: [id])
+  startsAt  DateTime
+  endsAt    DateTime
+  kind      String   @default("PRIVATE") // PRIVATE | OPEN_HOUSE
+  status    String   @default("REQUESTED") // REQUESTED | CONFIRMED | COMPLETED | CANCELLED
+  feedback  String?
+
+  @@index([startsAt])
+}
+
+// Shared team to-dos, optionally attached to a deal.
+model Task {
+  id         String    @id @default(cuid())
+  title      String
+  dealId     String?
+  deal       Deal?     @relation(fields: [dealId], references: [id])
+  assigneeId String?
+  assignee   User?     @relation(fields: [assigneeId], references: [id])
+  dueAt      DateTime?
+  status     String    @default("TODO") // TODO | DOING | DONE
+  createdAt  DateTime  @default(now())
 }
 
 // A listing presentation / mandate pitch held with a prospective seller.

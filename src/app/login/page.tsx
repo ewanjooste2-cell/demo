@@ -14,7 +14,7 @@ export default function LoginPage() {
             E
           </div>
           <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100">Estate Portal</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Private Property engagement &amp; leads hub</p>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Listings, leads &amp; deals — one hub for your portal data</p>
         </div>
         <form
           action={action}
