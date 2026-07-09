@@ -43,6 +43,11 @@ async function main() {
     update: { phone: "+27821110004", calendarToken: "cal-marius-8a4f" },
     create: { name: "Marius Steyn", email: "marius@demo.co.za", passwordHash: password, role: "AGENT", phone: "+27821110004", calendarToken: "cal-marius-8a4f" },
   });
+  const agent4 = await prisma.user.upsert({
+    where: { email: "ruan@demo.co.za" },
+    update: { phone: "+27824661952", calendarToken: "cal-ruan-9k2p" },
+    create: { name: "Ruan van Zyl", email: "ruan@demo.co.za", passwordHash: password, role: "AGENT", phone: "+27824661952", calendarToken: "cal-ruan-9k2p" },
+  });
 
   // Centurion, Gauteng listings. soldAgo (days) marks a completed sale.
   const listingsData = [
@@ -50,7 +55,7 @@ async function main() {
     { webRef: "T4236102", title: "2 Bedroom Apartment in Die Hoewes", address: "8 Lenchen Ave", suburb: "Die Hoewes", price: 1450000, propertyType: "Apartment", bedrooms: 2, agentId: agent1.id, base: 140, lat: -25.8524, lng: 28.1965 },
     { webRef: "T4236103", title: "4 Bedroom Family Home in Irene", address: "45 Stopforth Lane", suburb: "Irene", price: 5200000, propertyType: "House", bedrooms: 4, agentId: agent2.id, base: 60, lat: -25.8898, lng: 28.2121 },
     { webRef: "T4236104", title: "Vacant Land in Monavoni", address: "Plot 221, Monavoni AH", suburb: "Monavoni", price: 980000, propertyType: "Vacant Land", bedrooms: null, agentId: agent2.id, base: 25, lat: -25.9042, lng: 28.1057 },
-    { webRef: "T4236105", title: "3 Bedroom Townhouse in Wierda Park", address: "Unit 14, Silwerboom Estate", suburb: "Wierda Park", price: 2150000, propertyType: "Townhouse", bedrooms: 3, agentId: agent1.id, base: 110, lat: -25.8663, lng: 28.1462 },
+    { webRef: "T4236105", title: "3 Bedroom Townhouse in Wierda Park", address: "Unit 14, Silwerboom Estate", suburb: "Wierda Park", price: 2150000, propertyType: "Townhouse", bedrooms: 3, agentId: agent4.id, base: 110, lat: -25.8663, lng: 28.1462 },
     { webRef: "T4236106", title: "Penthouse in Centurion Central", address: "1201 Southdowns Towers", suburb: "Centurion Central", price: 4750000, propertyType: "Apartment", bedrooms: 3, agentId: agent2.id, base: 170, status: "UNDER_OFFER", lat: -25.858, lng: 28.1894 },
     { webRef: "T4236107", title: "5 Bedroom Estate Home in Midstream", address: "3 Bondev Dr", suburb: "Midstream", price: 8900000, propertyType: "House", bedrooms: 5, agentId: agent2.id, base: 45, lat: -25.9169, lng: 28.1855 },
     { webRef: "T4236108", title: "2 Bedroom Garden Cottage in Doringkloof", address: "67 Kraalnaboom Ave", suburb: "Doringkloof", price: 1690000, propertyType: "House", bedrooms: 2, agentId: agent1.id, base: 75, lat: -25.8536, lng: 28.2064 },
