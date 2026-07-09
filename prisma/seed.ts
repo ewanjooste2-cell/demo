@@ -66,6 +66,13 @@ async function main() {
     { webRef: "T4235907", title: "Top Floor Apartment in Pierre van Ryneveld", address: "402 Fever Tree", suburb: "Pierre van Ryneveld", price: 3350000, propertyType: "Apartment", bedrooms: 3, agentId: agent2.id, base: 130, soldAgo: 205, lat: -25.8228, lng: 28.228 },
     { webRef: "T4235908", title: "Starter Home in Heuweloord", address: "3 Bosluisberg St", suburb: "Heuweloord", price: 1250000, propertyType: "House", bedrooms: 2, agentId: agent3.id, base: 65, soldAgo: 47, lat: -25.8885, lng: 28.1204 },
     { webRef: "T4235909", title: "Townhouse in Amberfield", address: "Unit 3, Amberfield Manor", suburb: "Amberfield", price: 2380000, propertyType: "Townhouse", bedrooms: 3, agentId: agent3.id, base: 88, soldAgo: 190, lat: -25.9083, lng: 28.135 },
+    // Prior-year sales — the baseline the dashboard compares the last 12 months against.
+    { webRef: "T4235801", title: "3 Bedroom House in Lyttelton Manor", address: "22 Rabie St", suburb: "Lyttelton Manor", price: 2450000, propertyType: "House", bedrooms: 3, agentId: agent1.id, base: 95, soldAgo: 395, lat: -25.8391, lng: 28.2062 },
+    { webRef: "T4235802", title: "Townhouse in Celtisdal", address: "Unit 7, Celtis Ridge", suburb: "Celtisdal", price: 1780000, propertyType: "Townhouse", bedrooms: 3, agentId: agent1.id, base: 82, soldAgo: 468, lat: -25.9014, lng: 28.1263 },
+    { webRef: "T4235803", title: "Family Home in Eldo Park", address: "9 Marabou Ave", suburb: "Eldo Park", price: 2950000, propertyType: "House", bedrooms: 4, agentId: agent2.id, base: 74, soldAgo: 430, lat: -25.8749, lng: 28.1352 },
+    { webRef: "T4235804", title: "Apartment in Southdowns", address: "204 The Regency", suburb: "Southdowns", price: 2100000, propertyType: "Apartment", bedrooms: 2, agentId: agent2.id, base: 105, soldAgo: 552, lat: -25.9126, lng: 28.2019 },
+    { webRef: "T4235805", title: "4 Bedroom House in Raslouw", address: "15 Cormorant Cl", suburb: "Raslouw", price: 3600000, propertyType: "House", bedrooms: 4, agentId: agent3.id, base: 91, soldAgo: 505, lat: -25.8797, lng: 28.1039 },
+    { webRef: "T4235806", title: "Simplex in The Reeds", address: "Unit 12, Reedsdal", suburb: "The Reeds", price: 1520000, propertyType: "Townhouse", bedrooms: 2, agentId: agent3.id, base: 77, soldAgo: 640, lat: -25.8971, lng: 28.1441 },
   ];
 
   const listings = [];
@@ -153,9 +160,10 @@ async function main() {
     }
   }
 
-  // Historical won/lost buyers across the last 12 months — gives CAC a monthly trend.
+  // Historical won/lost buyers across the last 24 months — gives CAC a monthly
+  // trend plus a prior-year baseline for the dashboard deltas.
   const agentsList = [agent1, agent2, agent3];
-  for (let m = 11; m >= 0; m--) {
+  for (let m = 23; m >= 0; m--) {
     const won = 2 + ((m * 5) % 3); // 2–4 clients acquired per month
     for (let k = 0; k < won + 1; k++) {
       const i = m * 7 + k;
@@ -178,9 +186,9 @@ async function main() {
     }
   }
 
-  // Listing presentations (mandate pitches) — last 12 months, per agent.
+  // Listing presentations (mandate pitches) — last 24 months, per agent.
   await prisma.presentation.deleteMany({});
-  for (let m = 11; m >= 0; m--) {
+  for (let m = 23; m >= 0; m--) {
     for (const [ai, agent] of agentsList.entries()) {
       const count = 2 + ((m * 3 + ai * 5) % 3); // 2–4 presentations per agent per month
       for (let k = 0; k < count; k++) {
@@ -197,7 +205,7 @@ async function main() {
 
   // Monthly cost of supporting each agent: desk fee, admin, training, tools.
   await prisma.agentCost.deleteMany({});
-  for (let m = 11; m >= 0; m--) {
+  for (let m = 23; m >= 0; m--) {
     for (const [ai, agent] of agentsList.entries()) {
       await prisma.agentCost.create({
         data: {
@@ -217,7 +225,7 @@ async function main() {
     ["Print & boards", 6000],
     ["Google Ads", 9000],
   ];
-  for (let m = 11; m >= 0; m--) {
+  for (let m = 23; m >= 0; m--) {
     for (const [ci, [channel, base]] of channels.entries()) {
       await prisma.marketingSpend.create({
         data: {

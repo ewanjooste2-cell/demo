@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { LEAD_STATUS_LABELS, LISTING_STATUS_LABELS, SOURCE_LABELS } from "@/lib/format";
 
 const LEAD_BADGE: Record<string, string> = {
@@ -89,6 +90,143 @@ export function KpiTile({
       {sub && <div className={`text-xs mt-1 ${tone}`}>{sub}</div>}
     </Card>
   );
+}
+
+/** Tiny server-rendered trend line for stat tiles; null months break the line. */
+function Sparkline({ points }: { points: (number | null)[] }) {
+  const values = points.filter((v): v is number => v != null);
+  if (values.length < 2) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const w = 96;
+  const h = 28;
+  const x = (i: number) => (i / (points.length - 1)) * (w - 4) + 2;
+  const y = (v: number) => h - 3 - ((v - min) / range) * (h - 6);
+  // Split into segments at nulls so gaps stay gaps.
+  const segments: string[] = [];
+  let current: string[] = [];
+  points.forEach((v, i) => {
+    if (v == null) {
+      if (current.length > 1) segments.push(current.join(" "));
+      current = [];
+    } else {
+      current.push(`${x(i)},${y(v)}`);
+    }
+  });
+  if (current.length > 1) segments.push(current.join(" "));
+  const lastIndex = points.length - 1 - [...points].reverse().findIndex((v) => v != null);
+  const last = points[lastIndex];
+  return (
+    <svg
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      aria-hidden="true"
+      className="text-stone-300 dark:text-stone-600 shrink-0"
+    >
+      {segments.map((s, i) => (
+        <polyline
+          key={i}
+          points={s}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
+      {last != null && (
+        <circle cx={x(lastIndex)} cy={y(last)} r="2.5" className="fill-blue-600 dark:fill-blue-400" />
+      )}
+    </svg>
+  );
+}
+
+/**
+ * Executive stat tile: big value, change vs the prior period, one supporting
+ * line and an optional sparkline. `href` makes the whole tile a drill-down.
+ */
+export function StatTile({
+  label,
+  value,
+  sub,
+  delta,
+  spark,
+  href,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  /** Percent change vs the prior period; `goodWhenDown` for costs and DOM. */
+  delta?: { pct: number; goodWhenDown?: boolean } | null;
+  spark?: (number | null)[];
+  href?: string;
+}) {
+  const chip = (() => {
+    if (delta == null || !Number.isFinite(delta.pct)) return null;
+    const up = delta.pct >= 0;
+    const good = delta.goodWhenDown ? !up : up;
+    const magnitude = Math.abs(Math.round(delta.pct));
+    // A near-zero prior period produces absurd percentages — noise, not signal.
+    if (magnitude === 0 || magnitude > 300) return null;
+    return (
+      <span
+        title="vs the previous period"
+        className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs font-medium ${
+          good
+            ? "bg-green-50 text-green-700 dark:bg-green-950/60 dark:text-green-400"
+            : "bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-400"
+        }`}
+      >
+        {up ? "↑" : "↓"} {magnitude}%
+      </span>
+    );
+  })();
+
+  const body = (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
+          {label}
+        </div>
+        {href && (
+          <span
+            aria-hidden="true"
+            className="text-stone-300 dark:text-stone-600 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+          >
+            →
+          </span>
+        )}
+      </div>
+      <div className="flex items-baseline gap-2 mt-2">
+        <div className="text-4xl font-semibold text-stone-900 dark:text-stone-100">{value}</div>
+        {chip}
+      </div>
+      <div className="flex items-end justify-between gap-2 mt-2 min-h-[28px]">
+        {sub ? (
+          <div className="text-xs text-stone-500 dark:text-stone-400">{sub}</div>
+        ) : (
+          <span />
+        )}
+        {spark && <Sparkline points={spark} />}
+      </div>
+    </>
+  );
+
+  const frame =
+    "block bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-sm p-5";
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={`${frame} group hover:border-stone-300 dark:hover:border-stone-600 hover:shadow transition`}
+      >
+        {body}
+      </Link>
+    );
+  }
+  return <div className={frame}>{body}</div>;
 }
 
 export const inputClass =

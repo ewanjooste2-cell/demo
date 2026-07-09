@@ -1,21 +1,40 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getUserOrRedirect, agentScope } from "@/lib/session";
-import { formatRand, formatNumber } from "@/lib/format";
+import { formatRand, formatNumber, LISTING_STATUSES, LISTING_STATUS_LABELS } from "@/lib/format";
 import { Card, ListingStatusBadge, buttonClass } from "@/components/ui";
 
-export default async function ListingsPage() {
-  const user = await getUserOrRedirect();
+const pillClass = (selected: boolean) =>
+  `px-3 py-1.5 rounded-lg text-sm font-medium border ${
+    selected
+      ? "bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100"
+      : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border-stone-300 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800/60"
+  }`;
 
-  const listings = await prisma.listing.findMany({
-    where: agentScope(user),
-    include: {
-      agent: true,
-      snapshots: { orderBy: { capturedAt: "desc" }, take: 1 },
-      _count: { select: { leads: true } },
-    },
-    orderBy: { listedDate: "desc" },
-  });
+export default async function ListingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const { status } = await searchParams;
+  const user = await getUserOrRedirect();
+  const scope = agentScope(user);
+
+  const [listings, counts] = await Promise.all([
+    prisma.listing.findMany({
+      where: { ...scope, ...(status ? { status } : {}) },
+      include: {
+        agent: true,
+        snapshots: { orderBy: { capturedAt: "desc" }, take: 1 },
+        _count: { select: { leads: true } },
+      },
+      orderBy: { listedDate: "desc" },
+    }),
+    prisma.listing.groupBy({ by: ["status"], where: scope, _count: true }),
+  ]);
+
+  const countFor = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
+  const total = counts.reduce((sum, c) => sum + c._count, 0);
 
   return (
     <div className="space-y-4">
@@ -30,6 +49,17 @@ export default async function ListingsPage() {
         <Link href="/listings/new" className={buttonClass}>
           Add listing
         </Link>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Link href="/listings" className={pillClass(!status)}>
+          All {total}
+        </Link>
+        {LISTING_STATUSES.filter((s) => countFor(s) > 0).map((s) => (
+          <Link key={s} href={`/listings?status=${s}`} className={pillClass(status === s)}>
+            {LISTING_STATUS_LABELS[s]} {countFor(s)}
+          </Link>
+        ))}
       </div>
 
       <Card className="overflow-x-auto">
