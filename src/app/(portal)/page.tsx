@@ -1,19 +1,13 @@
-import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getUserOrRedirect, agentScope } from "@/lib/session";
 import { formatNumber, formatCompactRand } from "@/lib/format";
 import { Card, StatTile } from "@/components/ui";
 import { BarsChart, GroupedBarsChart } from "@/components/charts";
 import { ListingsMap, type MapListing } from "@/components/listings-map";
+import { DateRangePicker } from "@/components/date-range";
+import { RANGE_PRESETS } from "@/lib/ranges";
 
 const DAY = 24 * 60 * 60 * 1000;
-
-const PERIODS: { key: string; label: string; days: number | null }[] = [
-  { key: "30", label: "30 days", days: 30 },
-  { key: "90", label: "90 days", days: 90 },
-  { key: "365", label: "12 months", days: 365 },
-  { key: "all", label: "All time", days: null },
-];
 
 /** Percent change vs the prior window; null when either side has no signal. */
 function pctChange(current: number | null, prior: number | null) {
@@ -21,20 +15,93 @@ function pctChange(current: number | null, prior: number | null) {
   return ((current - prior) / prior) * 100;
 }
 
+type Range = {
+  key: string; // preset key or "custom"
+  label: string; // trigger-button label
+  sub: string; // header line under the title
+  start: number | null; // null = all time
+  end: number;
+  from?: string; // custom bounds, echoed back to the picker inputs
+  to?: string;
+};
+
+function formatDay(t: number) {
+  return new Date(t).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** Resolve ?period= presets or a ?from=/&to= custom window into [start, end]. */
+function resolveRange(
+  params: { period?: string; from?: string; to?: string },
+  now: number
+): Range {
+  const parseDay = (s?: string) => {
+    if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+    const t = new Date(`${s}T00:00:00`).getTime();
+    return Number.isNaN(t) ? null : t;
+  };
+
+  const from = parseDay(params.from);
+  if (from != null) {
+    const toStart = parseDay(params.to);
+    // The "to" day is inclusive: extend to the end of that day, capped at now.
+    let start = from;
+    let end = toStart != null ? Math.min(toStart + DAY - 1, now) : now;
+    if (end < start) [start, end] = [end - DAY + 1, start + DAY - 1];
+    const days = Math.max(1, Math.round((end - start) / DAY));
+    return {
+      key: "custom",
+      label: `${formatDay(start)} – ${formatDay(end)}`,
+      sub: `Custom range · change vs the preceding ${days} days`,
+      start,
+      end,
+      from: params.from,
+      to: params.to,
+    };
+  }
+
+  const key = params.period ?? "365";
+  const preset = RANGE_PRESETS.find((p) => p.key === key) ?? RANGE_PRESETS[4];
+  const startOf = (fn: (d: Date) => void) => {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    fn(d);
+    return d.getTime();
+  };
+  const start =
+    preset.key === "all"
+      ? null
+      : preset.key === "mtd"
+        ? startOf((d) => d.setDate(1))
+        : preset.key === "ytd"
+          ? startOf((d) => d.setMonth(0, 1))
+          : now - Number(preset.key) * DAY;
+  return {
+    key: preset.key,
+    label: preset.label,
+    sub:
+      start == null
+        ? "All time"
+        : `${preset.label} · change vs the preceding ${Math.max(1, Math.round((now - start) / DAY))} days`,
+    start,
+    end: now,
+  };
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; from?: string; to?: string }>;
 }) {
-  const { period: periodParam } = await searchParams;
-  const period = PERIODS.find((p) => p.key === periodParam) ?? PERIODS[2];
+  const params = await searchParams;
   const now = Date.now();
-  const periodStart = period.days ? now - period.days * DAY : null;
-  const priorStart = period.days ? now - 2 * period.days * DAY : null;
+  const range = resolveRange(params, now);
+  const { start, end } = range;
+  const priorStart = start != null ? start - (end - start) : null;
 
-  const inPeriod = (t: Date) => periodStart == null || t.getTime() >= periodStart;
+  const inPeriod = (t: Date) =>
+    (start == null || t.getTime() >= start) && t.getTime() <= end;
   const inPrior = (t: Date) =>
-    periodStart != null && t.getTime() >= priorStart! && t.getTime() < periodStart;
+    start != null && t.getTime() >= priorStart! && t.getTime() < start;
 
   const user = await getUserOrRedirect();
   const scope = agentScope(user);
@@ -222,27 +289,14 @@ export default async function DashboardPage({
           <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
             {user.role === "ADMIN" ? "Group dashboard" : `Welcome back, ${user.name.split(" ")[0]}`}
           </h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400">
-            {period.days
-              ? `Last ${period.label.toLowerCase()} · change vs the previous ${period.label.toLowerCase()}`
-              : "All time"}
-          </p>
+          <p className="text-sm text-stone-500 dark:text-stone-400">{range.sub}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {PERIODS.map((p) => (
-            <Link
-              key={p.key}
-              href={p.key === "365" ? "/" : `/?period=${p.key}`}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
-                p.key === period.key
-                  ? "bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100"
-                  : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border-stone-300 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800/60"
-              }`}
-            >
-              {p.label}
-            </Link>
-          ))}
-        </div>
+        <DateRangePicker
+          selectedKey={range.key}
+          label={range.label}
+          from={range.from}
+          to={range.to}
+        />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
