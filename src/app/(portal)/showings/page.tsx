@@ -326,7 +326,7 @@ export default async function ShowingsPage({
 
         <Card className="p-5">
           <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">
-            WhatsApp notifications
+            Email notifications
           </h2>
           <ul className="divide-y divide-stone-100 dark:divide-stone-800">
             {notifications.map((n) => (
@@ -355,8 +355,8 @@ export default async function ShowingsPage({
             )}
           </ul>
           <p className="text-xs text-stone-400 dark:text-stone-500 mt-2">
-            Messages send via the WhatsApp Business API (Twilio) once credentials are configured;
-            in the demo they are recorded here.
+            Agents are emailed when someone books a showing on their listing. Mails send via
+            Resend (free tier) once an API key is configured; in the demo they are recorded here.
           </p>
         </Card>
       </div>

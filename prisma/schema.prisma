@@ -28,12 +28,12 @@ model User {
   notifications Notification[]
 }
 
-// Outbound message log — WhatsApp via Twilio when configured, simulated otherwise.
+// Outbound message log — email via Resend when configured, simulated otherwise.
 model Notification {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  channel   String   @default("WHATSAPP")
+  channel   String   @default("EMAIL")
   to        String
   body      String
   status    String   @default("SIMULATED") // SENT | SIMULATED | FAILED

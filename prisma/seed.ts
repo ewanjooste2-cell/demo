@@ -323,15 +323,15 @@ async function main() {
     });
   }
 
-  // --- WhatsApp outbox: a couple of showing-request notifications ---------------
+  // --- Email outbox: a couple of showing-request notifications ------------------
   await prisma.notification.deleteMany({});
   const notifSamples: [typeof agent1, string][] = [
-    [agent1, "Hi Sipho, you have a new showing request: 3 Bedroom House in Eldoraigne, tomorrow 10:00 (buyer: Thandi Nkosi). Open the portal to confirm."],
-    [agent2, "Hi Anke, you have a new showing request: 4 Bedroom Family Home in Irene, Saturday 14:00 (open house). Open the portal to confirm."],
+    [agent1, "Showing request: 3 Bedroom House in Eldoraigne — Hi Sipho, you have a new showing request for tomorrow 10:00 (buyer: Thandi Nkosi). Open the portal to confirm."],
+    [agent2, "Showing request: 4 Bedroom Family Home in Irene — Hi Anke, you have a new open house request for Saturday 14:00. Open the portal to confirm."],
   ];
   for (const [u, body] of notifSamples) {
     await prisma.notification.create({
-      data: { userId: u.id, to: u.phone!, body, status: "SIMULATED", createdAt: daysAgo(1) },
+      data: { userId: u.id, channel: "EMAIL", to: u.email, body, status: "SIMULATED", createdAt: daysAgo(1) },
     });
   }
 

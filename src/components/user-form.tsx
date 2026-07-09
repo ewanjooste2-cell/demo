@@ -23,7 +23,7 @@ export function UserForm() {
       </div>
       <div>
         <label className={labelClass} htmlFor="new-phone">
-          WhatsApp number (for showing requests)
+          Mobile number (optional)
         </label>
         <input
           id="new-phone"

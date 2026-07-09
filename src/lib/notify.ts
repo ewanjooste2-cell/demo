@@ -1,33 +1,32 @@
 import { prisma } from "./db";
 
 /**
- * Send a WhatsApp message to a user and log it to the Notification outbox.
+ * Email a user and log the message to the Notification outbox.
  *
- * With TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM set,
- * the message goes out via the Twilio WhatsApp API. Without credentials the
- * message is recorded as SIMULATED so the demo shows exactly what would send.
+ * With RESEND_API_KEY set the mail goes out via Resend's API (free tier:
+ * 3 000 emails/month; without a verified domain use the default
+ * onboarding@resend.dev sender, which delivers to the Resend account owner).
+ * Without a key the message is recorded as SIMULATED so the demo shows
+ * exactly what would send.
  */
-export async function sendWhatsApp(user: { id: string; phone: string | null }, body: string) {
-  if (!user.phone) return;
-
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_WHATSAPP_FROM; // e.g. "whatsapp:+14155238886"
+export async function sendEmail(
+  user: { id: string; email: string },
+  subject: string,
+  body: string
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM ?? "Estate Portal <onboarding@resend.dev>";
 
   let status = "SIMULATED";
-  if (sid && token && from) {
+  if (apiKey) {
     try {
-      const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
-          Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`,
-          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
         },
-        body: new URLSearchParams({
-          From: from,
-          To: `whatsapp:${user.phone}`,
-          Body: body,
-        }),
+        body: JSON.stringify({ from, to: user.email, subject, text: body }),
       });
       status = res.ok ? "SENT" : "FAILED";
     } catch {
@@ -36,6 +35,6 @@ export async function sendWhatsApp(user: { id: string; phone: string | null }, b
   }
 
   await prisma.notification.create({
-    data: { userId: user.id, channel: "WHATSAPP", to: user.phone, body, status },
+    data: { userId: user.id, channel: "EMAIL", to: user.email, body: `${subject} — ${body}`, status },
   });
 }

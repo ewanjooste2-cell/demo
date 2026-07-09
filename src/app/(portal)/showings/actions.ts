@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { sendWhatsApp } from "@/lib/notify";
+import { sendEmail } from "@/lib/notify";
 
 const ALLOWED = new Set(["REQUESTED", "CONFIRMED", "COMPLETED", "CANCELLED"]);
 
@@ -35,7 +35,7 @@ export async function createShowing(formData: FormData) {
   const minutes = kind === "OPEN_HOUSE" ? 120 : 45;
   const agentId = listing.agentId ?? user.id;
   // Booking your own showing confirms it; booking on behalf of another agent
-  // opens a request and pings them on WhatsApp.
+  // opens a request and emails them.
   const isOwn = agentId === user.id;
 
   const showing = await prisma.showing.create({
@@ -59,8 +59,9 @@ export async function createShowing(formData: FormData) {
       hour: "2-digit",
       minute: "2-digit",
     });
-    await sendWhatsApp(
+    await sendEmail(
       showing.agent,
+      `Showing request: ${listing.title} — ${when}`,
       `Hi ${showing.agent.name.split(" ")[0]}, you have been requested for a ${
         kind === "OPEN_HOUSE" ? "open house" : "showing"
       }: ${listing.title}, ${listing.suburb} — ${when}${
