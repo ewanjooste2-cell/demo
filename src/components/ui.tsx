@@ -77,6 +77,37 @@ export function SourceBadge({ source }: { source: string }) {
   );
 }
 
+const AVATAR_COLORS = [
+  "bg-blue-600",
+  "bg-teal-600",
+  "bg-violet-600",
+  "bg-amber-600",
+  "bg-rose-600",
+  "bg-emerald-600",
+];
+
+/** Initials avatar — color is stable per name so people stay recognisable. */
+export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" }) {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]!.toUpperCase())
+    .join("");
+  let hash = 0;
+  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) % 997;
+  const color = AVATAR_COLORS[hash % AVATAR_COLORS.length];
+  const dims = size === "sm" ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs";
+  return (
+    <span
+      aria-hidden
+      className={`inline-flex items-center justify-center rounded-full text-white font-semibold shrink-0 ${color} ${dims}`}
+    >
+      {initials}
+    </span>
+  );
+}
+
 export function Card({
   children,
   className = "",

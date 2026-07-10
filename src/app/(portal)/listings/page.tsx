@@ -9,7 +9,9 @@ import {
   DEAL_STAGES,
   DEAL_STAGE_LABELS,
 } from "@/lib/format";
-import { Card, ListingStatusBadge, buttonClass } from "@/components/ui";
+import { Card, ListingStatusBadge, buttonClass, secondaryButtonClass } from "@/components/ui";
+
+export const metadata = { title: "Listings" };
 
 const pillClass = (selected: boolean) =>
   `px-3 py-1.5 rounded-lg text-sm font-medium border ${
@@ -60,9 +62,14 @@ export default async function ListingsPage({
             {dealsTotal > 0 && ` · ${dealsTotal} deal${dealsTotal === 1 ? "" : "s"} in the pipeline`}
           </p>
         </div>
-        <Link href="/listings/new" className={buttonClass}>
-          Add listing
-        </Link>
+        <div className="flex gap-2">
+          <a href="/api/export/listings" download className={secondaryButtonClass}>
+            Export CSV
+          </a>
+          <Link href="/listings/new" className={buttonClass}>
+            Add listing
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">

@@ -2,7 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getUserOrRedirect } from "@/lib/session";
 import { timeAgo, HUNT_STATUSES, HUNT_STATUS_LABELS, formatCompactRand } from "@/lib/format";
-import { Card, HuntStatusBadge, buttonClass } from "@/components/ui";
+import { Card, HuntStatusBadge, buttonClass, secondaryButtonClass } from "@/components/ui";
+
+export const metadata = { title: "Property hunting" };
 
 export default async function HuntingPage({
   searchParams,
@@ -56,9 +58,14 @@ export default async function HuntingPage({
             {total} propert{total === 1 ? "y" : "ies"} hunted — owners to pitch for a mandate
           </p>
         </div>
-        <Link href="/hunting/new" className={buttonClass}>
-          Add hunt
-        </Link>
+        <div className="flex gap-2">
+          <a href="/api/export/hunts" download className={secondaryButtonClass}>
+            Export CSV
+          </a>
+          <Link href="/hunting/new" className={buttonClass}>
+            Add hunt
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">

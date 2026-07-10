@@ -1,18 +1,40 @@
 import Link from "next/link";
+import { prisma } from "@/lib/db";
 import { getUserOrRedirect } from "@/lib/session";
+import { timeAgo } from "@/lib/format";
 import { logout } from "@/app/login/actions";
 import { NavLinks } from "@/components/nav-links";
 import { UserMenu } from "@/components/user-menu";
+import { CommandPalette } from "@/components/command-palette";
+import { NotificationBell } from "@/components/notification-bell";
+
+const DAY = 24 * 60 * 60 * 1000;
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const user = await getUserOrRedirect();
+
+  const notifications = await prisma.notification.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+  });
+  const bellItems = notifications.map((n) => ({
+    id: n.id,
+    body: n.body,
+    status: n.status,
+    createdAt: n.createdAt.toISOString(),
+    timeAgo: timeAgo(n.createdAt),
+  }));
+  const recentCount = notifications.filter(
+    (n) => Date.now() - n.createdAt.getTime() < DAY
+  ).length;
 
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-stone-950">
       <header className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 h-14">
-            <div className="flex items-center gap-3 sm:gap-8 min-w-0">
+            <div className="flex items-center gap-3 sm:gap-6 min-w-0">
               <Link href="/" className="flex items-center gap-2">
                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 text-white font-bold">
                   E
@@ -23,7 +45,9 @@ export default async function PortalLayout({ children }: { children: React.React
               </Link>
               <NavLinks isAdmin={user.role === "ADMIN"} />
             </div>
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+              <CommandPalette />
+              <NotificationBell items={bellItems} recentCount={recentCount} />
               <UserMenu name={user.name} roleLabel={user.role === "ADMIN" ? "Principal" : "Agent"} />
               <form action={logout}>
                 <button

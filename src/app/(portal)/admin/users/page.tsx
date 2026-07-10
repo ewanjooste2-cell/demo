@@ -5,6 +5,8 @@ import { Card } from "@/components/ui";
 import { UserForm } from "@/components/user-form";
 import { toggleUserActive } from "./actions";
 
+export const metadata = { title: "Users" };
+
 export default async function UsersPage() {
   const admin = await requireAdmin();
 
