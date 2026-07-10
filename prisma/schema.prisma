@@ -26,6 +26,9 @@ model User {
   showings      Showing[]
   tasks         Task[]
   notifications Notification[]
+  huntsCreated  Hunt[]         @relation("HuntsCreated")
+  huntsAssigned Hunt[]         @relation("HuntsAssigned")
+  huntUpdates   HuntUpdate[]
 }
 
 // Outbound message log — email via Resend when configured, simulated otherwise.
@@ -196,6 +199,40 @@ model MarketingSpend {
   amount  Int // rand
 
   @@unique([month, channel])
+}
+
+// A property spotted while prospecting (private sale / FSBO / expired mandate):
+// the owner's details are captured so an agent can pitch for the mandate.
+model Hunt {
+  id          String       @id @default(cuid())
+  address     String
+  suburb      String?
+  ownerName   String
+  ownerPhone  String?
+  ownerEmail  String?
+  sourceUrl   String? // link to the posting where the property was found
+  askingPrice Int?
+  notes       String?
+  status      String       @default("NEW") // NEW | ASSIGNED | CONTACTED | APPOINTMENT | MANDATE_SIGNED | DECLINED | DROPPED
+  createdAt   DateTime     @default(now())
+  createdById String?
+  createdBy   User?        @relation("HuntsCreated", fields: [createdById], references: [id])
+  agentId     String?
+  agent       User?        @relation("HuntsAssigned", fields: [agentId], references: [id])
+  updates     HuntUpdate[]
+
+  @@index([status])
+}
+
+// Progress notes an agent logs while working a hunt.
+model HuntUpdate {
+  id        String   @id @default(cuid())
+  huntId    String
+  hunt      Hunt     @relation(fields: [huntId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
 }
 
 model LeadNote {

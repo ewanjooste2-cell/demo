@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { LEAD_STATUS_LABELS, LISTING_STATUS_LABELS, SOURCE_LABELS } from "@/lib/format";
+import {
+  HUNT_STATUS_LABELS,
+  LEAD_STATUS_LABELS,
+  LISTING_STATUS_LABELS,
+  SOURCE_LABELS,
+} from "@/lib/format";
 
 const LEAD_BADGE: Record<string, string> = {
   NEW: "bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/60 dark:text-blue-300 dark:ring-blue-400/30",
@@ -38,6 +43,28 @@ export function ListingStatusBadge({ status }: { status: string }) {
       }`}
     >
       {LISTING_STATUS_LABELS[status] ?? status}
+    </span>
+  );
+}
+
+const HUNT_BADGE: Record<string, string> = {
+  NEW: "bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/60 dark:text-blue-300 dark:ring-blue-400/30",
+  ASSIGNED: "bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/60 dark:text-violet-300 dark:ring-violet-400/30",
+  CONTACTED: "bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-950/60 dark:text-amber-300 dark:ring-amber-400/30",
+  APPOINTMENT: "bg-teal-50 text-teal-700 ring-teal-600/20 dark:bg-teal-950/60 dark:text-teal-300 dark:ring-teal-400/30",
+  MANDATE_SIGNED: "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-950/60 dark:text-green-300 dark:ring-green-400/30",
+  DECLINED: "bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-950/60 dark:text-red-300 dark:ring-red-400/30",
+  DROPPED: "bg-stone-100 text-stone-500 ring-stone-500/20 dark:bg-stone-800 dark:text-stone-400 dark:ring-stone-500/30",
+};
+
+export function HuntStatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
+        HUNT_BADGE[status] ?? HUNT_BADGE.DROPPED
+      }`}
+    >
+      {HUNT_STATUS_LABELS[status] ?? status}
     </span>
   );
 }

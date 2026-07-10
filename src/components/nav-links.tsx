@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/", label: "Dashboard" },
   { href: "/listings", label: "Listings" },
   { href: "/leads", label: "Leads" },
+  { href: "/hunting", label: "Hunting" },
   { href: "/showings", label: "Showings" },
   { href: "/cma", label: "CMA" },
   { href: "/team", label: "Team" },
