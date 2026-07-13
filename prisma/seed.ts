@@ -44,9 +44,9 @@ async function main() {
     create: { name: "Marius Steyn", email: "marius@demo.co.za", passwordHash: password, role: "AGENT", phone: "+27821110004", calendarToken: "cal-marius-8a4f" },
   });
   const agent4 = await prisma.user.upsert({
-    where: { email: "ruan@demo.co.za" },
+    where: { email: "rvanzyl67@gmail.com" },
     update: { phone: "+27824661952", calendarToken: "cal-ruan-9k2p" },
-    create: { name: "Ruan van Zyl", email: "ruan@demo.co.za", passwordHash: password, role: "AGENT", phone: "+27824661952", calendarToken: "cal-ruan-9k2p" },
+    create: { name: "Ruan van Zyl", email: "rvanzyl67@gmail.com", passwordHash: password, role: "AGENT", phone: "+27824661952", calendarToken: "cal-ruan-9k2p" },
   });
 
   // Centurion, Gauteng listings. soldAgo (days) marks a completed sale.
