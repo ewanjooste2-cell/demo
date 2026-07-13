@@ -1,10 +1,21 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useSyncExternalStore } from "react";
 import { login } from "./actions";
+
+const emptySubscribe = () => () => {};
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(login, undefined);
+  // Password-manager extensions (Keeper, LastPass…) inject their icon
+  // elements into the credential fields before React hydrates, which fails
+  // hydration on every load. Rendering the form only after hydration keeps
+  // their edits out of the server/client comparison entirely.
+  const hydrated = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-stone-100 dark:bg-stone-950 px-4">
@@ -16,6 +27,12 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100">Estate Portal</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Listings, leads &amp; deals — one hub for your portal data</p>
         </div>
+        {!hydrated ? (
+          <div
+            aria-busy="true"
+            className="bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-200 dark:border-stone-800 p-6 min-h-[240px] animate-pulse"
+          />
+        ) : (
         <form
           action={action}
           className="bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-200 dark:border-stone-800 p-6 space-y-4"
@@ -30,7 +47,6 @@ export default function LoginPage() {
               type="email"
               autoComplete="email"
               required
-              suppressHydrationWarning
               className="w-full rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 text-stone-900 dark:text-stone-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -44,7 +60,6 @@ export default function LoginPage() {
               type="password"
               autoComplete="current-password"
               required
-              suppressHydrationWarning
               className="w-full rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 text-stone-900 dark:text-stone-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -61,6 +76,7 @@ export default function LoginPage() {
             {pending ? "Signing in…" : "Sign in"}
           </button>
         </form>
+        )}
       </div>
     </main>
   );
