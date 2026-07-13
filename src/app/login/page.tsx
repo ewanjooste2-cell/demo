@@ -30,6 +30,7 @@ export default function LoginPage() {
               type="email"
               autoComplete="email"
               required
+              suppressHydrationWarning
               className="w-full rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 text-stone-900 dark:text-stone-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -43,6 +44,7 @@ export default function LoginPage() {
               type="password"
               autoComplete="current-password"
               required
+              suppressHydrationWarning
               className="w-full rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 text-stone-900 dark:text-stone-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

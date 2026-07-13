@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { getUserOrRedirect } from "@/lib/session";
 import { logout } from "@/app/login/actions";
 import { NavLinks } from "@/components/nav-links";
@@ -6,6 +7,7 @@ import { UserMenu } from "@/components/user-menu";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const user = await getUserOrRedirect();
+  const theme = (await cookies()).get("theme")?.value === "dark" ? "dark" : "light";
 
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-stone-950">
@@ -24,7 +26,11 @@ export default async function PortalLayout({ children }: { children: React.React
               <NavLinks isAdmin={user.role === "ADMIN"} />
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              <UserMenu name={user.name} roleLabel={user.role === "ADMIN" ? "Principal" : "Agent"} />
+              <UserMenu
+                name={user.name}
+                roleLabel={user.role === "ADMIN" ? "Principal" : "Agent"}
+                initialTheme={theme}
+              />
               <form action={logout}>
                 <button
                   type="submit"

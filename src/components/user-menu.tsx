@@ -1,35 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-type Theme = "light" | "dark" | "system";
+type Theme = "light" | "dark";
 
-function applyTheme(theme: Theme) {
-  const dark =
-    theme === "dark" ||
-    (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-  document.documentElement.classList.toggle("dark", dark);
+// The cookie lets the server render the right class on the next request;
+// the class toggle applies it instantly on this one.
+function applyTheme(next: Theme) {
+  document.cookie = `theme=${next}; path=/; max-age=31536000; samesite=lax`;
+  document.documentElement.classList.toggle("dark", next === "dark");
 }
 
-export function UserMenu({ name, roleLabel }: { name: string; roleLabel: string }) {
-  const [theme, setTheme] = useState<Theme>("system");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved === "light" || saved === "dark") setTheme(saved);
-  }, []);
+export function UserMenu({
+  name,
+  roleLabel,
+  initialTheme,
+}: {
+  name: string;
+  roleLabel: string;
+  initialTheme: Theme;
+}) {
+  const [theme, setTheme] = useState<Theme>(initialTheme);
 
   function choose(next: Theme) {
     setTheme(next);
-    if (next === "system") localStorage.removeItem("theme");
-    else localStorage.setItem("theme", next);
     applyTheme(next);
   }
 
   const options: { value: Theme; label: string; icon: string }[] = [
     { value: "light", label: "Light", icon: "☀" },
     { value: "dark", label: "Dark", icon: "☾" },
-    { value: "system", label: "System", icon: "◐" },
   ];
 
   return (

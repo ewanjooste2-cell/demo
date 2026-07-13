@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Script from "next/script";
+import { cookies } from "next/headers";
 import localFont from "next/font/local";
 import { Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -25,29 +25,24 @@ export const metadata: Metadata = {
   description: "Listings, leads and deals — one hub for your portal data",
 };
 
-// Runs before paint: applies the saved theme (or the OS preference) so there is
-// no flash of the wrong theme on load.
-const themeInit = `(function(){try{var t=localStorage.getItem("theme");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d)}catch(e){}})()`;
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // The theme lives in a cookie so the server renders the right class up
+  // front — no inline bootstrap script, no flash, nothing for React to warn
+  // about when extensions force a client re-render.
+  const theme = (await cookies()).get("theme")?.value;
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${nextArt.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${nextArt.variable} ${geistMono.variable} h-full antialiased${
+        theme === "dark" ? " dark" : ""
+      }`}
     >
-      <body className="min-h-full flex flex-col">
-        <Script
-          id="theme-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: themeInit }}
-        />
-        {children}
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }
