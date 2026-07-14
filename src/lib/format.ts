@@ -94,6 +94,26 @@ export const DOC_STATUS_LABELS: Record<string, string> = {
   SIGNED: "Signed",
 };
 
+export const HUNT_STATUSES = [
+  "NEW",
+  "ASSIGNED",
+  "CONTACTED",
+  "APPOINTMENT",
+  "MANDATE_SIGNED",
+  "DECLINED",
+  "DROPPED",
+] as const;
+
+export const HUNT_STATUS_LABELS: Record<string, string> = {
+  NEW: "New",
+  ASSIGNED: "Assigned",
+  CONTACTED: "Owner contacted",
+  APPOINTMENT: "Appointment set",
+  MANDATE_SIGNED: "Mandate signed",
+  DECLINED: "Owner declined",
+  DROPPED: "Dropped",
+};
+
 export const SHOWING_STATUS_LABELS: Record<string, string> = {
   REQUESTED: "Requested",
   CONFIRMED: "Confirmed",

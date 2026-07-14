@@ -2,7 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getUserOrRedirect, agentScope } from "@/lib/session";
 import { timeAgo, LEAD_STATUSES, LEAD_STATUS_LABELS } from "@/lib/format";
-import { Card, LeadStatusBadge, SourceBadge, buttonClass } from "@/components/ui";
+import { Card, LeadStatusBadge, SourceBadge, buttonClass, secondaryButtonClass } from "@/components/ui";
+
+export const metadata = { title: "Leads" };
 
 export default async function LeadsPage({
   searchParams,
@@ -36,9 +38,14 @@ export default async function LeadsPage({
             {user.role !== "ADMIN" && " assigned to you"}
           </p>
         </div>
-        <Link href="/leads/new" className={buttonClass}>
-          Add lead
-        </Link>
+        <div className="flex gap-2">
+          <a href="/api/export/leads" download className={secondaryButtonClass}>
+            Export CSV
+          </a>
+          <Link href="/leads/new" className={buttonClass}>
+            Add lead
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">

@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Estate Portal",
+  title: { default: "Estate Portal", template: "%s · Estate Portal" },
   description: "Listings, leads and deals — one hub for your portal data",
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Avatar } from "@/components/ui";
 
 type Theme = "light" | "dark";
 
@@ -34,11 +35,14 @@ export function UserMenu({
 
   return (
     <div className="relative group hidden sm:block">
-      <div className="text-right cursor-default px-2 py-1 rounded-lg group-hover:bg-stone-100 dark:group-hover:bg-stone-800">
-        <div className="text-sm font-medium text-stone-800 dark:text-stone-200 leading-tight">
-          {name}
+      <div className="flex items-center gap-2 cursor-default px-2 py-1 rounded-lg group-hover:bg-stone-100 dark:group-hover:bg-stone-800">
+        <Avatar name={name} />
+        <div className="text-right">
+          <div className="text-sm font-medium text-stone-800 dark:text-stone-200 leading-tight">
+            {name}
+          </div>
+          <div className="text-xs text-stone-500 dark:text-stone-400 leading-tight">{roleLabel}</div>
         </div>
-        <div className="text-xs text-stone-500 dark:text-stone-400 leading-tight">{roleLabel}</div>
       </div>
 
       <div className="absolute right-0 top-full pt-1 w-40 hidden group-hover:block z-30">
